@@ -1,0 +1,21 @@
+# 🏆 Quiniela Mundial FIFA 2026 (SaaS MVP)
+
+## 📌 Descripción del Proyecto
+Aplicación web diseñada para gestionar pronósticos deportivos (quinielas) del Mundial de Fútbol 2026. Permite a los usuarios registrarse, unirse a ligas privadas con contraseña, seleccionar avatares dinámicos y visualizar un ranking en tiempo real, incluyendo un Salón de la Fama exclusivo.
+
+## ⚙️ Arquitectura y Stack Tecnológico
+- **Frontend:** Vanilla HTML5, CSS3 (CSS in line/Internal) y JavaScript (ES6+). Diseño responsivo y libre de frameworks pesados para máxima velocidad.
+- **Backend / BaaS:** Supabase (PostgreSQL).
+- **Autenticación:** Gestión de perfiles vinculada a correos electrónicos con validación anti-duplicidad de Nicknames.
+
+## 🚀 Funcionalidades Clave (Para revisión)
+1. **Aduana de Contraseñas:** Lógica en JS que verifica la existencia de una liga en la tabla `ligas` de Supabase y valida el password antes de permitir el acceso o registro de un usuario.
+2. **Guardado Inteligente (Upsert lógico):** El sistema diferencia entre la creación de un perfil nuevo (`INSERT`) y la edición de un perfil existente (`UPDATE`).
+3. **Renderizado Dinámico:** Generación de tablas de clasificación y vistas de pronósticos inyectando HTML mediante Template Literals en el DOM.
+4. **Vistas Protegidas (VIP):** Renderizado condicional del "Salón de la Fama" basado en el grupo (`miGrupo`) del usuario activo.
+
+## 🔍 Foco de la Revisión (Code Review)
+Se solicita feedback especialmente en:
+- Optimización de las consultas asíncronas (`async/await`) hacia Supabase.
+- Mejores prácticas de seguridad para el manejo de los estados (variables globales) en el frontend.
+- Refactorización de la inyección de HTML para prevenir potenciales vulnerabilidades XSS.

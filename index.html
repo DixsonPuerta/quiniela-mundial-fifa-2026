@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiniela FIFA 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f6f8; padding: 20px; }
+        .contenedor { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        /* Estilos Pantalla Login */
+        #vista-login { display: block; }
+        #vista-quiniela { display: none; }
+        
+        .btn-google, .btn-facebook {
+            color: white; border: none; padding: 15px 20px;
+            font-size: 16px; border-radius: 50px; cursor: pointer; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 260px; margin: 12px auto;
+        }
+        .btn-google { background-color: #4285F4; }
+        .btn-google:hover { background-color: #357ae8; }
+        .btn-facebook { background-color: #1877F2; }
+        .btn-facebook:hover { background-color: #166fe5; }
+
+        /* Controles de Usuario */
+        .user-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.9em; color: #555; }
+        .btn-logout { background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+        .btn-admin { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-weight: bold; }
+
+        /* Nuevos Estilos Quiniela (Tarjetas, Banderas y Horarios) */
+        .tarjeta-partido { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #e1e4e8; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .fase-tag { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 12px; text-align: center; background: #f0f2f5; padding: 4px; border-radius: 4px; }
+        
+        .enfrentamiento { display: flex; justify-content: space-between; align-items: center; }
+        .equipo { width: 35%; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .bandera { font-size: 24px; }
+        .nombre-equipo { font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: center; }
+        
+        .marcador-inputs { display: flex; align-items: center; gap: 8px; }
+        input[type="number"] { width: 45px; height: 45px; text-align: center; font-size: 20px; border: 2px solid #e1e4e8; border-radius: 8px; font-weight: bold; }
+        .vs { font-size: 14px; color: #888; font-weight: bold; }
+        
+        .btn-save { background-color: #27ae60; color: white; border: none; padding: 15px 30px; font-size: 16px; border-radius: 30px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; transition: background 0.3s; }
+        
+        .seccion-horarios { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #eee; text-align: center; }
+        .fecha-partido { font-size: 12px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .horarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 11px; color: #555; font-family: monospace; }
+        .horarios-pendiente { font-size: 12px; color: #999; font-style: italic; }
+
+        @media (max-width: 480px) {
+            .horarios-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .horarios-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* --- Pega tu código aquí abajo --- */
+        .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 16px; }
+        .ranking-item:nth-child(1) { background: #fff8e1; font-weight: bold; border-radius: 8px; border: 1px solid #ffe082; } /* Oro */
+        .ranking-item:nth-child(2) { background: #f5f5f5; font-weight: bold; border-radius: 8px; border: 1px solid #e0e0e0; } /* Plata */
+        .ranking-item:nth-child(3) { background: #fbe9e7; font-weight: bold; border-radius: 8px; border: 1px solid #ffccbc; } /* Bronce */
+        
+        /* --- ESTILOS DE PESTAÑAS (TABS) --- */
+        .tabs-container { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 20px; padding-bottom: 10px; }
+        .tab-btn { background: #e0e0e0; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: bold; transition: 0.3s; }
+        .tab-btn:hover { background: #d5d5d5; }
+        .tab-btn.active { background: #27ae60; color: white; }
+        .jornada-content { display: none; }
+        
+        /* --- ANIMACIONES DE CAMPEÓN --- */
+        .texto-campeon {
+            color: #f1c40f;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 900;
+            text-transform: uppercase;
+            animation: pulseGlow 1.5s infinite alternate;
+            margin: 20px 0;
+            background: #2c3e50;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        @keyframes pulseGlow {
+            from { text-shadow: 0 0 10px #f39c12; transform: scale(1); }
+            to { text-shadow: 0 0 20px #f1c40f, 0 0 30px #f1c40f; transform: scale(1.05); }
+        }
+        .corona-ganador { text-align:center; font-size:40px; margin-bottom:-15px; animation: bounce 2s infinite; z-index: 20; position: relative;}
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="fondo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9998;"></div>
+    <div id="modal-perfil" class="contenedor" style="display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto;">
+        <h2 style="color: #2c3e50; text-align: center; line-height: 1.3; margin-bottom: 10px;">
+            Ficha de Jugador<br>
+            <span style="color: #27ae60; font-size: 24px;">Mundial FIFA 2026</span> 🏆
+        </h2>
+        
+        <label><b>1. Elige tu Avatar</b></label>
+        <select id="input-avatar" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;">
+            <option value="⚽">⚽ Balón Clásico</option>
+            <option value="😎">😎 El Crack</option>
+            <option value="👽">👽 El Extraterrestre</option>
+            <option value="🦁">🦁 El León</option>
+            <option value="🧤">🧤 El Arquero</option>
+            <option value="🏆">🏆 El Campeón</option>
+            <option value="🦅">🦅 El Águila (Visión de juego)</option>
+            <option value="🦍">🦍 El Tanque (Fuerza)</option>
+            <option value="🦈">🦈 El Tiburón (Goleador)</option>
+            <option value="🦊">🦊 El Zorro (Astucia)</option>
+            <option value="🔥">🔥 En Racha (On Fire)</option>
+            <option value="💎">💎 La Joya (Promesa)</option>
+            <option value="👑">👑 El Rey / La Reina</option>
+            <option value="🎯">🎯 El Francotirador (Precisión)</option>
+            <option value="👟">👟 Botín de Oro</option>
+            <option value="🪄">🪄 El Mago (Regates)</option>
+            <option value="🚀">🚀 El Cohete (Velocidad)</option>
+            <option value="🧱">🧱 La Muralla (Defensa)</option>
+            <option value="🤡">🤡 El Bromista</option>
+            <option value="👻">👻 El Fantasma (Aparece de la nada)</option>
+            <option value="🤖">🤖 La Máquina</option>
+            <option value="🥷">🥷 El Ninja</option>
+            <option value="🐐">🐐 El GOAT (El Mejor de Todos)</option>
+        </select>
+
+        <label><b>2. Tu Apodo (Único)</b></label>
+        <input type="text" id="input-nickname" placeholder="Ej: El Crack de la U" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ccc;">
+        
+        <label><b>3. Únete o Crea una Liga Privada</b></label>
+        <input type="text" id="input-nombre-liga" placeholder="Nombre de Liga (Ej: LOS CAMPEONES)" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        
+        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+            <input type="text" id="input-clave-liga" placeholder="Clave Secreta (Ej: Mundial2026)" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            <button onclick="generarClavePrivada()" style="background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; padding: 0 10px;" title="Generar Clave Segura">🎲 Aleatoria</button>
+        </div>
+        <p style="font-size: 11px; color: gray; margin-bottom: 20px;">*Si la liga no existe, se creará automáticamente con esta clave. Si ya existe, debes poner la clave correcta para entrar.</p>
+        
+        <button class="btn-save" onclick="guardarPerfil()" style="width: 100%;">Entrar a Jugar</button>
+    </div>
+
+    <div id="vista-login" class="contenedor" style="max-width: 600px; margin: 50px auto;">
+        <h1 style="color: #2c3e50; text-align: center; margin-bottom: 5px;">🏆 Quiniela Mundial FIFA 2026</h1>
+        <p style="text-align: center; color: gray; margin-bottom: 30px;">Demuestra que eres el verdadero Campeón del Mundo</p>
+
+        <!-- Banderas de los anfitriones (Imágenes universales) -->
+        <div style="text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; align-items: center;">
+            <img src="https://flagcdn.com/w80/ca.png" alt="Canadá" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            <img src="https://flagcdn.com/w80/us.png" alt="Estados Unidos" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            <img src="https://flagcdn.com/w80/mx.png" alt="México" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        </div>
+        
+        <div style="background: #f8f9fa; border-left: 4px solid #27ae60; padding: 15px; border-radius: 5px; margin-bottom: 25px; font-size: 14px; color: #333; text-align: left;">
+            <h3 style="margin-top: 0; color: #2c3e50;">📜 Reglamento Oficial</h3>
+            <ul style="padding-left: 20px; margin-bottom: 0;">
+                <li style="margin-bottom: 8px;"><b>Puntaje Normal:</b> 5 pts por acertar el marcador exacto, 3 pts por acertar la tendencia (ganador o empate).</li>
+                <li style="margin-bottom: 8px;"><b>Puntaje Fase knockout:</b> Similar a la fase de grupos pero el resultado valido será el final entre los 90 minutos reglamentarios (No se considera el tiempo Extra ni Penales).</li>
+                <li style="margin-bottom: 8px;"><b>Puntaje Gran Final:</b> 10 pts por marcador exacto, 5 pts por tendencia.</li>
+                <li style="margin-bottom: 8px;"><b>Niebla de Guerra (Cierre):</b> Los pronósticos se bloquean 1 hora antes del primer partido de cada jornada.</li>
+                <li><b>Clasificación:</b> El jugador con más puntos al finalizar el torneo será coronado en su Liga Privada.</li>
+            </ul>
+        </div>
+
+        <button class="btn-google" onclick="loginConGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
+            Entrar con Google
+        </button>
+
+        <button class="btn-facebook" onclick="loginConFacebook()" style="margin-top: 10px;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" width="20">
+            Entrar con Facebook
+        </button>
+    </div>
+
+    <div id="vista-quiniela" class="contenedor">
+        <div class="user-info">
+            <span id="nombre-usuario">Cargando...</span>
+            <div>
+                <button id="btn-palmares" class="btn-admin" style="display: none; background: linear-gradient(45deg, #ffd700, #f39c12); color: #000; font-weight: bold; border: 1px solid #d35400; box-shadow: 0 4px 6px rgba(243,156,18,0.3);" onclick="mostrarPalmares()">🌟 Palmarés</button>
+                <button id="btn-ranking" class="btn-admin" style="background: #8e44ad;" onclick="mostrarRanking()">🏆 Ranking</button>
+                <button id="btn-admin" class="btn-admin" style="display: none;" onclick="toggleModoArbitro()">⚖️ Modo Árbitro</button>
+                <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </div>
+
+        <h2>Mis Pronósticos ⚽</h2>
+    <div id="tabs-jornadas" class="tabs-container">
+            <button class="tab-btn active" onclick="cambiarPestana(1, this)">Jornada 1</button>
+            <button class="tab-btn" onclick="cambiarPestana(2, this)">Jornada 2</button>
+            <button class="tab-btn" onclick="cambiarPestana(3, this)">Jornada 3</button>
+            <button class="tab-btn" onclick="cambiarPestana(4, this)">16vos</button>
+            <button class="tab-btn" onclick="cambiarPestana(5, this)">8vos</button>
+            <button class="tab-btn" onclick="cambiarPestana(6, this)">4tos</button>
+            <button class="tab-btn" onclick="cambiarPestana(7, this)">Semis</button>
+            <button class="tab-btn" onclick="cambiarPestana(8, this)">Final</button>
+            <button class="tab-btn" style="background: #f39c12; color: white;" onclick="cambiarPestana('real', this)">🏆 Torneo Real</button>
+        </div>
+
+        <div id="lista-partidos">
+            <p>Cargando datos...</p>
+        </div>
+        
+        <button class="btn-save" onclick="guardarTodo()">Guardar Cambios</button>
+
+    </div> <div id="vista-ranking" class="contenedor" style="display: none;">
+        <h2>🏆 Tabla de Posiciones</h2>
+        <div id="tabla-posiciones-lista" style="text-align: left; margin-top: 20px;">
+            <p>Calculando puntajes...</p>
+        </div>
+        <button class="btn-logout" onclick="cerrarRanking()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver a mis pronósticos</button>
+    </div>
+
+    <div id="vista-rival" class="contenedor" style="display: none;">
+        <h2 id="titulo-rival">Pronósticos de...</h2>
+        <div id="lista-rival" style="text-align: left; margin-top: 20px;">
+            <p>Cargando datos clasificados...</p>
+        </div>
+        <button class="btn-logout" onclick="cerrarVistaRival()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver al Ranking</button>
+    </div>
+    <div id="vista-rival" class="contenedor" style="display: none;">
+        <h2 id="titulo-rival">Pronósticos de...</h2>
+        <div id="lista-rival" style="text-align: left; margin-top: 20px;">
+            <p>Cargando datos clasificados...</p>
+        </div>
+        <button class="btn-logout" onclick="cerrarVistaRival()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver al Ranking</button>
+    </div>
+
+    <!-- 🌟 VISTA PALMARÉS (SALÓN DE LA FAMA EXCLUSIVO) 🌟 -->
+    <div id="vista-palmares" class="contenedor" style="display: none; max-width: 800px; margin: 20px auto;">
+        <style>
+            .palmares-header { text-align: center; color: #d35400; margin-bottom: 20px; font-size: 26px; text-transform: uppercase; font-weight: bold; }
+            .tabla-general-palmares { background: linear-gradient(135deg, #1a252f, #2c3e50); border: 2px solid #f39c12; border-radius: 10px; padding: 20px; color: white; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+            .tabla-general-palmares h3 { text-align: center; color: #ffd700; margin-top: 0; font-size: 20px; margin-bottom: 15px; letter-spacing: 1px; }
+            .fila-general { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+            .fila-general:last-child { border-bottom: none; }
+            .fila-general span.nombre { font-size: 16px; font-weight: bold; }
+            .fila-general span.trofeos { font-size: 14px; letter-spacing: 2px; }
+            
+            .grid-torneos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+            .card-torneo { background: #2c3e50; border: 1px solid #f1c40f; border-radius: 8px; padding: 15px; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+            .card-torneo h4 { color: #f1c40f; text-align: center; margin-top: 0; margin-bottom: 10px; font-size: 13px; border-bottom: 1px solid #34495e; padding-bottom: 8px; }
+            .card-torneo p { margin: 5px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        </style>
+
+        <h2 class="palmares-header">🌟 Salón de la Fama 🌟<br><span style="font-size: 16px; color: #7f8c8d;">Hermanos Adventistas</span></h2>
+
+        <div class="tabla-general-palmares">
+            <h3>🏆 TABLA GENERAL HISTÓRICA 🏆</h3>
+            <div class="fila-general"><span class="nombre">1. Ricardo</span><span class="trofeos">🏆🏆🏆🏆🏆🏆</span></div>
+            <div class="fila-general"><span class="nombre">2. Gustavo</span><span class="trofeos">🏆🏆🏆🏆🏆</span></div>
+            <div class="fila-general"><span class="nombre">3. Wolfg</span><span class="trofeos">🏆🏆🏆🏆🏆</span></div>
+            <div class="fila-general"><span class="nombre">4. Raúl</span><span class="trofeos">🏆🏆🏆</span></div>
+            <div class="fila-general"><span class="nombre">5. Dixson</span><span class="trofeos">🏆🏆</span></div>
+            <div class="fila-general"><span class="nombre">6. Jesús</span><span class="trofeos">🏆</span></div>
+            <div class="fila-general"><span class="nombre">7. Mervis</span><span class="trofeos">🏆</span></div>
+            <div class="fila-general"><span class="nombre">8. Fredy</span><span class="trofeos">🏆</span></div>
+            <div class="fila-general"><span class="nombre">9. Rodrigo</span><span class="trofeos">🏆</span></div>
+        </div>
+
+        <div class="grid-torneos">
+            <div class="card-torneo">
+                <h4>CHAMPIONS LEAGUE</h4>
+                <p><span>Ricardo</span><span>🏆🏆🏆🏆</span></p>
+                <p><span>Gustavo</span><span>🏆🏆🏆</span></p>
+                <p><span>Raúl</span><span>🏆</span></p>
+                <p><span>Wolfg</span><span>🏆</span></p>
+                <p><span>Jesús</span><span>🏆</span></p>
+                <p><span>Dixson</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>COPA AMÉRICA</h4>
+                <p><span>Gustavo</span><span>🏆🏆</span></p>
+                <p><span>Raúl</span><span>🏆</span></p>
+                <p><span>Wolfg</span><span>🏆</span></p>
+                <p><span>Ricardo</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>MUNDIAL</h4>
+                <p><span>Ricardo</span><span>🏆</span></p>
+                <p><span>Wolfg</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>EUROCOPA</h4>
+                <p><span>Fredy</span><span>🏆</span></p>
+                <p><span>Raúl</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>ELIMINATORIA CONMEBOL</h4>
+                <p><span>Dixson</span><span>🏆</span></p>
+                <p><span>Rodrigo</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>MUNDIAL DE CLUBES</h4>
+                <p><span>Wolfg</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>INTERNACIONAL CUP</h4>
+                <p><span>Wolfg</span><span>🏆</span></p>
+            </div>
+            <div class="card-torneo">
+                <h4>COPA CONFEDERACIONES</h4>
+                <p><span>Mervis</span><span>🏆</span></p>
+            </div>
+        </div>
+        
+        <button class="btn-save" onclick="cerrarPalmares()" style="width: 100%; background: #34495e; margin-top: 20px;">Volver a la Cancha</button>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN SUPABASE ---
+        const SUPABASE_URL = 'https://bbabzzclrupzpipqlyqc.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_dVq6aRPfvg4KSQCheyAbvw_txnQg8lu';
+        const clienteSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let usuarioActual = null;
+        let modoArbitro = false; // Controla si estamos viendo predicciones o resultados reales
+        let miNickname = ''; // Para guardar el apodo del jugador
+        let miGrupo = '';    // Para guardar el código de la liga
+        let miAvatar = '⚽'; // Nuevo: Para guardar el avatar elegido
+
+        // --- GESTIÓN DE PERFILES Y LIGAS ---
+
+        // Generador de contraseñas aleatorias
+        function generarClavePrivada() {
+            const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let codigo = '';
+            for (let i = 0; i < 6; i++) {
+                codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+            }
+            document.getElementById('input-clave-liga').value = codigo;
+        }
+
+        function abrirEdicionPerfil() {
+            // Llenamos el formulario con los datos actuales
+            document.getElementById('input-nickname').value = miNickname;
+            document.getElementById('input-nombre-liga').value = miGrupo;
+            document.getElementById('input-clave-liga').value = ''; // La clave se deja en blanco por seguridad
+            document.getElementById('input-avatar').value = miAvatar;
+            
+            // Mostramos el modal
+            document.getElementById('fondo-modal').style.display = 'block';
+            document.getElementById('modal-perfil').style.display = 'block';
+        }
+
+        async function verificarPerfil() {
+            const { data, error } = await clienteSupabase
+                .from('perfiles')
+                .select('nickname, grupo, avatar') 
+                .eq('correo', usuarioActual)
+                .single();
+
+            if (data) {
+                // Ya existe, cargamos sus datos en memoria
+                miNickname = data.nickname;
+                miGrupo = data.grupo;
+                miAvatar = data.avatar || '⚽'; 
+                document.getElementById('vista-quiniela').style.display = 'block';
+
+                // Mostramos el Avatar, Apodo y la Liga con el botón de Editar
+                document.getElementById('nombre-usuario').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+                        <span style="font-size: 16px; color: #2c3e50;">
+                            ${miAvatar} <b>${miNickname}</b> 
+                            <span onclick="abrirEdicionPerfil()" style="font-size: 11px; color: #3498db; cursor: pointer; margin-left: 5px;">[Editar ✏️]</span>
+                        </span>
+                        <span style="background: #e8f5e9; color: #27ae60; border: 1px solid #c8e6c9; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 12px; margin-top: 4px; text-transform: uppercase; white-space: nowrap;">🏆 LIGA: ${miGrupo}</span>
+                    </div>
+                `;
+
+                cargarPartidos();
+                // Lógica de Palmarés VIP
+                if (miGrupo === 'HERMANOS ADVENTISTAS') {
+                    document.getElementById('btn-palmares').style.display = 'inline-block';
+                } else {
+                    document.getElementById('btn-palmares').style.display = 'none';
+                }
+        function mostrarPalmares() {
+            document.getElementById('vista-quiniela').style.display = 'none';
+            document.getElementById('vista-ranking').style.display = 'none';
+            document.getElementById('vista-palmares').style.display = 'block';
+        }
+
+        function cerrarPalmares() {
+            document.getElementById('vista-palmares').style.display = 'none';
+            document.getElementById('vista-quiniela').style.display = 'block';
+        }
+            } else {
+                // Es nuevo, le mostramos el formulario
+                document.getElementById('fondo-modal').style.display = 'block';
+                document.getElementById('modal-perfil').style.display = 'block';
+            }
+        }
+
+        async function guardarPerfil() {
+            const nick = document.getElementById('input-nickname').value.trim();
+            const grupoText = document.getElementById('input-nombre-liga').value.trim().toUpperCase() || 'PUBLICO';
+            const claveText = document.getElementById('input-clave-liga').value.trim();
+            const avatarElegido = document.getElementById('input-avatar').value;
+
+            if (!nick) { alert('La FIFA exige que tengas un Nickname para jugar.'); return; }
+
+            // --- VALIDACIÓN DE NICKNAME DUPLICADO ---
+            if (nick !== miNickname) {
+                const { data: nickExistente } = await clienteSupabase
+                    .from('perfiles')
+                    .select('nickname')
+                    .ilike('nickname', nick)
+                    .single();
+
+                if (nickExistente) {
+                    alert('❌ Ese Nickname ya está ocupado por otro jugador en el mundo. Por favor, elige otro.');
+                    return; 
+                }
+            }
+
+            // --- 🛑 ADUANA DE LIGAS Y CONTRASEÑAS 🛑 ---
+            // Solo pedimos/validamos clave si está intentando entrar a una liga NUEVA o DISTINTA a la que ya tiene
+            if (grupoText !== 'PUBLICO' && grupoText !== miGrupo) {
+                if (!claveText) {
+                    alert('⚠️ Debes ingresar una Clave Secreta para unirte o crear esta liga privada.'); return;
+                }
+
+                // Buscamos si la liga ya existe en la bóveda
+                const { data: ligaData } = await clienteSupabase
+                    .from('ligas')
+                    .select('password')
+                    .eq('nombre', grupoText)
+                    .single();
+
+                if (ligaData) {
+                    // La liga EXISTE: Comparamos la contraseña
+                    if (ligaData.password !== claveText) {
+                        alert('❌ Clave incorrecta para la liga: ' + grupoText);
+                        return; // Lo rebotamos
+                    }
+                } else {
+                    // La liga NO EXISTE: La creamos y registramos su contraseña
+                    const { error: errorLiga } = await clienteSupabase.from('ligas').insert([
+                        { nombre: grupoText, password: claveText }
+                    ]);
+                    if (errorLiga) {
+                        alert('Error al guardar la contraseña de la nueva liga.'); return;
+                    }
+                }
+            }
+            // ------------------------------------------
+
+            // --- GUARDADO INTELIGENTE (Insertar o Actualizar) ---
+            let errorAlGuardar = null;
+
+            if (miNickname === '') {
+                // Es un Jugador Nuevo -> INSERTAR en la base de datos
+                const { error } = await clienteSupabase.from('perfiles').insert([
+                    { correo: usuarioActual, nickname: nick, grupo: grupoText, avatar: avatarElegido }
+                ]);
+                errorAlGuardar = error;
+            } else {
+                // Es un Jugador Existente -> ACTUALIZAR sus datos
+                const { error } = await clienteSupabase.from('perfiles')
+                    .update({ nickname: nick, grupo: grupoText, avatar: avatarElegido })
+                    .eq('correo', usuarioActual);
+                errorAlGuardar = error;
+            }
+
+            if (!errorAlGuardar) {
+                miNickname = nick;
+                miGrupo = grupoText;
+                miAvatar = avatarElegido;
+                
+                // Cerramos el modal
+                document.getElementById('modal-perfil').style.display = 'none';
+                document.getElementById('fondo-modal').style.display = 'none';
+                document.getElementById('vista-quiniela').style.display = 'block';
+                
+                // Actualizamos la cabecera al instante (CON el botón Editar)
+                document.getElementById('nombre-usuario').innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+                        <span style="font-size: 16px; color: #2c3e50;">
+                            ${miAvatar} <b>${miNickname}</b> 
+                            <span onclick="abrirEdicionPerfil()" style="font-size: 11px; color: #3498db; cursor: pointer; margin-left: 5px;">[Editar ✏️]</span>
+                        </span>
+                        <span style="background: #e8f5e9; color: #27ae60; border: 1px solid #c8e6c9; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 12px; margin-top: 4px; text-transform: uppercase; white-space: nowrap;">🏆 LIGA: ${miGrupo}</span>
+                    </div>
+                `;
+                
+                // Recargamos los partidos y cerramos el ranking si estaba abierto
+                cargarPartidos();
+                if (document.getElementById('vista-ranking').style.display === 'block') {
+                    cerrarRanking();
+                }
+                // Lógica de Palmarés VIP
+                if (miGrupo === 'HERMANOS ADVENTISTAS') {
+                    document.getElementById('btn-palmares').style.display = 'inline-block';
+                } else {
+                    document.getElementById('btn-palmares').style.display = 'none';
+                }
+
+            } else {
+                alert('Hubo un error al guardar tu perfil. Intenta de nuevo.');
+            }
+        }
+
+        // --- 2. DICCIONARIO DE BANDERAS Y HORARIOS ---
+        const banderas = {
+            "México": "🇲🇽", "Sudáfrica": "🇿🇦", "Corea del Sur": "🇰🇷", "República Checa": "🇨🇿",
+            "Canadá": "🇨🇦", "Bosnia y Herzegovina": "🇧🇦", "Catar": "🇶🇦", "Suiza": "🇨🇭",
+            "Brasil": "🇧🇷", "Marruecos": "🇲🇦", "Haití": "🇭🇹", "Escocia": "🏴",
+            "Estados Unidos": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turquía": "🇹🇷",
+            "Alemania": "🇩🇪", "Curazao": "🇨🇼", "Costa de Marfil": "🇨🇮", "Ecuador": "🇪🇨",
+            "Países Bajos": "🇳🇱", "Japón": "🇯🇵", "Suecia": "🇸🇪", "Túnez": "🇹🇳",
+            "Bélgica": "🇧🇪", "Egipto": "🇪🇬", "Irán": "🇮🇷", "Nueva Zelanda": "🇳🇿",
+            "España": "🇪🇸", "Cabo Verde": "🇨🇻", "Arabia Saudí": "🇸🇦", "Uruguay": "🇺🇾",
+            "Francia": "🇫🇷", "Senegal": "🇸🇳", "Irak": "🇮🇶", "Noruega": "🇳🇴",
+            "Argentina": "🇦🇷", "Argelia": "🇩🇿", "Austria": "🇦🇹", "Jordania": "🇯🇴",
+            "Portugal": "🇵🇹", "RD Congo": "🇨🇩", "Uzbekistán": "🇺🇿", "Colombia": "🇨🇴",
+            "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croacia": "🇭🇷", "Ghana": "🇬🇭", "Panamá": "🇵🇦",
+            "Venezuela": "🇻🇪", "Perú": "🇵🇪"
+        };
+
+        function obtenerBandera(equipo) {
+            return banderas[equipo] || "🏳️"; 
+        }
+
+        function generarBloqueHorarios(fechaUtcString) {
+            if (!fechaUtcString) return `<div class="horarios-pendiente">📅 Horario por definir</div>`;
+            
+            const fecha = new Date(fechaUtcString);
+            const optHora = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const fechaFmt = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+
+            const cl = fecha.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', ...optHora });
+            const ve = fecha.toLocaleTimeString('es-VE', { timeZone: 'America/Caracas', ...optHora });
+            const co = fecha.toLocaleTimeString('es-CO', { timeZone: 'America/Bogota', ...optHora });
+            const pe = fecha.toLocaleTimeString('es-PE', { timeZone: 'America/Lima', ...optHora });
+            const usEast = fecha.toLocaleTimeString('en-US', { timeZone: 'America/New_York', ...optHora });
+            const usWest = fecha.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', ...optHora });
+
+            return `
+                <div class="fecha-partido">📅 ${fechaFmt}</div>
+                <div class="horarios-grid">
+                    <span>🇨🇱 CL: ${cl}</span>
+                    <span>🇻🇪 VE: ${ve}</span>
+                    <span>🇨🇴 CO: ${co}</span>
+                    <span>🇵🇪 PE: ${pe}</span>
+                    <span>🇺🇸 EST: ${usEast}</span>
+                    <span>🇺🇸 PST: ${usWest}</span>
+                </div>
+            `;
+        }
+
+        // --- 3. SISTEMA DE LOGIN ---
+        async function loginConGoogle() {
+            const { error } = await clienteSupabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { 
+                    redirectTo: 'http://localhost:5500/' 
+                }
+            });
+            if (error) alert("Error al iniciar con Google: " + error.message);
+        }
+
+        async function loginConFacebook() {
+            const { error } = await clienteSupabase.auth.signInWithOAuth({
+                provider: 'facebook',
+                options: { 
+                    redirectTo: 'http://localhost:5500/' 
+                }
+            });
+            if (error) alert("Error al iniciar con Facebook: " + error.message);
+        }
+
+        async function cerrarSesion() {
+            await clienteSupabase.auth.signOut();
+            window.location.reload();
+        }
+
+        window.onload = async function() {
+            const { data: { session } } = await clienteSupabase.auth.getSession();
+            if (session) {
+                usuarioActual = session.user.email;
+                mostrarQuiniela();
+            }
+        };
+
+      function mostrarQuiniela() {
+            // 1. Ocultamos la pantalla de login
+            document.getElementById('vista-login').style.display = 'none';
+            
+            // 2. Lógica del Administrador
+            if (usuarioActual === 'dixpuer@gmail.com') {
+                document.getElementById('btn-admin').style.display = 'inline-block';
+            }
+            
+            // 3. Pasamos por la aduana de perfiles
+            verificarPerfil(); 
+        }
+
+        // --- 4. LÓGICA DE PARTIDOS Y RENDERIZADO ---
+        async function cargarPartidos() {
+            const contenedor = document.getElementById('lista-partidos');
+            contenedor.innerHTML = '<p>Cargando datos...</p>';
+
+            // Pedimos la lista de partidos
+            const { data: partidos, error: errorPartidos } = await clienteSupabase
+                .from('partidos')
+                .select('id, local, visita, fase, fecha_utc, resultado_local, resultado_visita, jornada, fecha_hora')
+                .order('id', { ascending: true });
+
+            // Pedimos los pronósticos
+            const { data: misPronosticos, error: errorPronosticos } = await clienteSupabase
+                .from('pronosticos')
+                .select('partido_id, goles_local, goles_visita')
+                .eq('usuario', usuarioActual);
+
+            if (errorPartidos) {
+                console.error('Error DB:', errorPartidos);
+                contenedor.innerHTML = '<p>Error al conectar con la base de datos.</p>';
+                return;
+            }
+
+            const mapaPronosticos = {};
+            if (misPronosticos) {
+                misPronosticos.forEach(p => {
+                    mapaPronosticos[p.partido_id] = { local: p.goles_local, visita: p.goles_visita };
+                });
+            }
+
+            contenedor.innerHTML = '';
+            
+            // ⏱️ ACTIVAMOS EL RELOJ ANTES DE EMPEZAR A DIBUJAR
+            const candados = calcularCandados(partidos);
+            let htmlAgrupado = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'', 7:'', 8:'' };
+
+            partidos.forEach(partido => {
+                // Revisamos si la jornada está bloqueada. ¡Si es el Árbitro, NUNCA se bloquea!
+                const jornadaBloqueada = candados[partido.jornada] ? candados[partido.jornada].bloqueada : false;
+                const atributoBloqueo = (jornadaBloqueada && !modoArbitro) ? 'disabled style="background-color: #e0e0e0; cursor: not-allowed;"' : '';
+
+                let valLocal = '';
+                let valVisita = '';
+
+                // LÓGICA DE DOBLE ROL
+                if (modoArbitro) {
+                    valLocal = partido.resultado_local !== null ? partido.resultado_local : '';
+                    valVisita = partido.resultado_visita !== null ? partido.resultado_visita : '';
+                } else {
+                    const pronostico = mapaPronosticos[partido.id];
+                    valLocal = pronostico ? pronostico.local : '';
+                    valVisita = pronostico ? pronostico.visita : '';
+                }
+
+                // Tu estructura HTML original e intacta
+                let htmlPartido = `
+                    <div class="tarjeta-partido">
+                        <div class="fase-tag">${partido.fase || 'Fase de Grupos'}</div>
+                        
+                        <div class="enfrentamiento">
+                            <div class="equipo">
+                                <span class="bandera">${obtenerBandera(partido.local)}</span>
+                                <span class="nombre-equipo">${partido.local}</span>
+                            </div>
+                            
+                            <div class="marcador-inputs">
+                                <input type="number" min="0" id="local_${partido.id}" placeholder="-" value="${valLocal}" ${atributoBloqueo}>
+                                <span class="vs">vs</span>
+                                <input type="number" min="0" id="visita_${partido.id}" placeholder="-" value="${valVisita}" ${atributoBloqueo}>
+                            </div>
+                            
+                            <div class="equipo">
+                                <span class="bandera">${obtenerBandera(partido.visita)}</span>
+                                <span class="nombre-equipo">${partido.visita}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="seccion-horarios">
+                            ${generarBloqueHorarios(partido.fecha_utc)}
+                        </div>
+                    </div>
+                `;
+
+                // Metemos la tarjeta en su pestaña correspondiente
+                if(partido.jornada && htmlAgrupado[partido.jornada] !== undefined) {
+                    htmlAgrupado[partido.jornada] += htmlPartido;
+                }
+            });
+
+            // Inyectar el trofeo y el campeón en la Jornada 8 (La Final)
+            if (htmlAgrupado[8] !== '') {
+                const finalOficial = partidos.find(p => p.jornada === 8);
+                let campeonTexto = '';
+                
+                // Si el árbitro ya guardó el resultado de la final...
+                if (finalOficial && finalOficial.resultado_local !== null && finalOficial.resultado_visita !== null) {
+                    const nombreCampeon = finalOficial.resultado_local > finalOficial.resultado_visita ? finalOficial.local : (finalOficial.resultado_visita > finalOficial.resultado_local ? finalOficial.visita : 'CAMPEÓN POR PENALES');
+                    campeonTexto = `<div class="texto-campeon">🏆 ¡${nombreCampeon} CAMPEÓN! 🏆</div>`;
+                }
+
+                htmlAgrupado[8] = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="copa.jpg" alt="Copa del Mundo" style="width: 150px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    </div>
+                    ${campeonTexto}
+                    ${htmlAgrupado[8]}
+                `;
+            }
+
+            // Envolvemos las 8 cajas en HTML oculto y las pegamos en la pantalla
+            let htmlFinal = '';
+            for (let i = 1; i <= 8; i++) {
+                let mostrar = i === 1 ? 'block' : 'none'; 
+                let textoVacio = htmlAgrupado[i] === '' ? '<p style="text-align:center; color:gray;">Aún no hay partidos cargados en esta fase.</p>' : htmlAgrupado[i];
+                
+                htmlFinal += `
+                    <div id="contenedor-jornada-${i}" class="jornada-content" style="display: ${mostrar};">
+                        ${textoVacio}
+                    </div>
+                `;
+            }
+
+            // --- MOTOR NATIVO DE TABLAS DE POSICIONES Y LLAVE ---
+            let htmlTorneoReal = `
+                <div style="padding: 10px;">
+                    <h3 style="text-align:center; margin-bottom: 20px; color: #2c3e50;">🏆 Clasificación Oficial de Grupos</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+            `;
+
+            // 1. Agrupamos y calculamos las matemáticas de los Grupos
+            const grupos = {};
+            partidos.forEach(p => {
+                if (p.fase && p.fase.toLowerCase().includes('grupo')) {
+                    if (!grupos[p.fase]) grupos[p.fase] = {};
+                    if (!grupos[p.fase][p.local]) grupos[p.fase][p.local] = { pts: 0, pj: 0, gf: 0, gc: 0 };
+                    if (!grupos[p.fase][p.visita]) grupos[p.fase][p.visita] = { pts: 0, pj: 0, gf: 0, gc: 0 };
+
+                    if (p.resultado_local !== null && p.resultado_visita !== null) {
+                        let l = grupos[p.fase][p.local];
+                        let v = grupos[p.fase][p.visita];
+                        l.pj++; v.pj++;
+                        l.gf += p.resultado_local; l.gc += p.resultado_visita;
+                        v.gf += p.resultado_visita; v.gc += p.resultado_local;
+                        
+                        if (p.resultado_local > p.resultado_visita) { l.pts += 3; } 
+                        else if (p.resultado_local < p.resultado_visita) { v.pts += 3; } 
+                        else { l.pts += 1; v.pts += 1; } 
+                    }
+                }
+            });
+
+            // 2. Dibujamos las minitarjetas para cada grupo
+            const gruposOrdenados = Object.keys(grupos).sort(); 
+            gruposOrdenados.forEach(nombreGrupo => {
+                const equipos = grupos[nombreGrupo];
+                const tabla = Object.entries(equipos).map(([nombre, stats]) => {
+                    return { nombre, ...stats, dif: stats.gf - stats.gc };
+                }).sort((a, b) => {
+                    if (b.pts !== a.pts) return b.pts - a.pts;
+                    if (b.dif !== a.dif) return b.dif - a.dif;
+                    return b.gf - a.gf;
+                });
+
+                htmlTorneoReal += `
+                    <div style="background: white; border-radius: 8px; border: 1px solid #ddd; width: 100%; max-width: 320px; overflow: hidden;">
+                        <div style="background: #2c3e50; color: white; text-align: center; padding: 6px; font-weight: bold; font-size: 14px;">${nombreGrupo.toUpperCase()}</div>
+                        <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;">
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd; color: gray;">
+                                <th style="padding: 6px; text-align: left;">Equipo</th>
+                                <th title="Partidos Jugados">PJ</th>
+                                <th title="Diferencia de Goles">DG</th>
+                                <th title="Puntos">Pts</th>
+                            </tr>
+                `;
+                
+                tabla.forEach((eq, index) => {
+                    const bg = index < 2 ? 'background: #e8f5e9;' : ''; 
+                    htmlTorneoReal += `
+                            <tr style="border-bottom: 1px solid #eee; ${bg}">
+                                <td style="padding: 8px; text-align: left; font-weight: bold;">
+                                    <span class="bandera" style="font-size: 12px; margin-right: 5px;">${obtenerBandera(eq.nombre)}</span>
+                                    ${eq.nombre.substring(0,3).toUpperCase()}
+                                </td>
+                                <td>${eq.pj}</td>
+                                <td>${eq.dif > 0 ? '+'+eq.dif : eq.dif}</td>
+                                <td style="font-size: 14px;"><b>${eq.pts}</b></td>
+                            </tr>
+                    `;
+                });
+                htmlTorneoReal += `</table></div>`;
+            });
+            htmlTorneoReal += `</div>`; // Cierra la flexbox de grupos
+
+            // 3. GENERAMOS LA LLAVE ELIMINATORIA (BRACKET)
+            const jornadasLlave = [
+                { id: 4, nombre: '16avos de Final' },
+                { id: 5, nombre: 'Octavos de Final' },
+                { id: 6, nombre: 'Cuartos de Final' },
+                { id: 7, nombre: 'Semifinales' },
+                { id: 8, nombre: 'Gran Final' }
+            ];
+
+            htmlTorneoReal += `
+                <h3 style="text-align:center; margin-top: 40px; margin-bottom: 20px; color: #2c3e50;">🌳 Llave Eliminatoria</h3>
+                <div style="display: flex; overflow-x: auto; gap: 20px; padding: 10px; padding-bottom: 30px;">
+            `;
+
+            jornadasLlave.forEach(fase => {
+                // Filtramos los partidos que pertenecen a esta jornada (4 a 8)
+                const partidosRonda = partidos.filter(p => p.jornada === fase.id);
+                
+                htmlTorneoReal += `<div style="display: flex; flex-direction: column; justify-content: space-around; min-width: 220px; gap: 15px;">`;
+                htmlTorneoReal += `<div style="text-align: center; font-weight: bold; color: #7f8c8d; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 10px;">${fase.nombre.toUpperCase()}</div>`;
+                
+                if(partidosRonda.length === 0) {
+                     htmlTorneoReal += `<div style="text-align: center; color: #bdc3c7; font-size: 13px; font-style: italic; background: #f9f9f9; padding: 20px; border-radius: 8px;">Partidos por definir</div>`;
+                } else {
+                    partidosRonda.forEach(p => {
+                        // Lógica para detectar al ganador
+                        let ganadorLocal = p.resultado_local !== null && p.resultado_local > p.resultado_visita;
+                        let ganadorVisita = p.resultado_visita !== null && p.resultado_visita > p.resultado_local;
+                        
+                        let fwL = ganadorLocal ? 'bold' : 'normal';
+                        let fwV = ganadorVisita ? 'bold' : 'normal';
+                        let colorL = ganadorLocal ? '#27ae60' : '#333';
+                        let colorV = ganadorVisita ? '#27ae60' : '#333';
+                        let bgL = ganadorLocal ? '#e8f5e9' : 'transparent';
+                        let bgV = ganadorVisita ? '#e8f5e9' : 'transparent';
+
+                        htmlTorneoReal += `
+                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                                <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: ${fwL}; color: ${colorL}; background: ${bgL};">
+                                    <span>${obtenerBandera(p.local)} ${p.local}</span>
+                                    <span>${p.resultado_local !== null ? p.resultado_local : '-'}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 8px 12px; font-weight: ${fwV}; color: ${colorV}; background: ${bgV};">
+                                    <span>${obtenerBandera(p.visita)} ${p.visita}</span>
+                                    <span>${p.resultado_visita !== null ? p.resultado_visita : '-'}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                htmlTorneoReal += `</div>`;
+            });
+            htmlTorneoReal += `</div></div>`; // Cierra la flexbox del Bracket y el div principal
+
+            // 4. Envolvemos todo e inyectamos en la pantalla
+            htmlFinal += `
+                <div id="contenedor-jornada-real" class="jornada-content" style="display: none;">
+                    ${htmlTorneoReal}
+                </div>
+            `;
+
+            contenedor.innerHTML = htmlFinal;
+        }
+
+        // --- 5. GUARDAR DATOS DEL JUGADOR ---
+        async function guardarTodo() {
+            const { data: partidos } = await clienteSupabase.from('partidos').select('id');
+            let guardados = 0;
+            
+            for (let p of partidos) {
+                let inputLocal = document.getElementById('local_' + p.id);
+                let inputVisita = document.getElementById('visita_' + p.id);
+
+                if (inputLocal && inputVisita && inputLocal.value !== "" && inputVisita.value !== "") {
+                    const pronostico = {
+                        usuario: usuarioActual,
+                        partido_id: p.id,
+                        goles_local: parseInt(inputLocal.value),
+                        goles_visita: parseInt(inputVisita.value)
+                    };
+                    const { error } = await clienteSupabase.from('pronosticos').upsert([pronostico], { onConflict: 'usuario, partido_id' });
+                    if (!error) guardados++;
+                }
+            }
+            alert(`✅ Guardados ${guardados} pronósticos para ${usuarioActual}`);
+        }
+
+        // --- 6. PANEL DEL ÁRBITRO ---
+        function toggleModoArbitro() {
+            modoArbitro = !modoArbitro;
+            const titulo = document.querySelector('#vista-quiniela h2');
+            const btnSave = document.querySelector('.btn-save');
+            
+            if (modoArbitro) {
+                titulo.innerHTML = '⚖️ PANEL DEL ÁRBITRO (Resultados Reales)';
+                titulo.style.color = '#d35400';
+                btnSave.innerText = 'Guardar Resultados Oficiales';
+                btnSave.style.backgroundColor = '#d35400';
+                btnSave.onclick = guardarResultadosReales;
+            } else {
+                titulo.innerHTML = 'Mis Pronósticos ⚽';
+                titulo.style.color = '#333';
+                btnSave.innerText = 'Guardar Cambios';
+                btnSave.style.backgroundColor = '#27ae60';
+                btnSave.onclick = guardarTodo;
+            }
+            
+            cargarPartidos(); 
+        }
+
+        async function guardarResultadosReales() {
+            const { data: partidos } = await clienteSupabase.from('partidos').select('id');
+            let guardados = 0;
+            
+            for (let p of partidos) {
+                let inputLocal = document.getElementById('local_' + p.id);
+                let inputVisita = document.getElementById('visita_' + p.id);
+
+                if (inputLocal && inputVisita && inputLocal.value !== "" && inputVisita.value !== "") {
+                    const { error } = await clienteSupabase
+                        .from('partidos')
+                        .update({ 
+                            resultado_local: parseInt(inputLocal.value), 
+                            resultado_visita: parseInt(inputVisita.value) 
+                        })
+                        .eq('id', p.id);
+                        
+                    if (!error) guardados++;
+                }
+            }
+            alert(`⚖️ ¡Listo Jefe! Se han guardado ${guardados} marcadores oficiales.`);
+        }
+        // --- 7. TABLA DE POSICIONES (RANKING POR LIGAS) ---
+        async function mostrarRanking() {
+            document.getElementById('vista-quiniela').style.display = 'none';
+            document.getElementById('vista-ranking').style.display = 'block';
+            document.getElementById('tabla-posiciones-lista').innerHTML = `<p style="text-align:center; color:gray;">Calculando puntajes para la liga: <b>${miGrupo}</b>...</p>`;
+
+            // 1. Buscamos SOLO a los jugadores de MI liga
+            const { data: companeros } = await clienteSupabase
+                .from('perfiles')
+                .select('correo, nickname, avatar') // 👉 AGREGAMOS EL AVATAR
+                .eq('grupo', miGrupo);
+
+            const correosValidos = companeros ? companeros.map(c => c.correo) : [];
+            const mapaNicks = {};
+            const mapaAvatares = {}; // 👉 NUEVO MAPA
+            if (companeros) {
+                companeros.forEach(c => {
+                    mapaNicks[c.correo] = c.nickname;
+                    mapaAvatares[c.correo] = c.avatar || '⚽'; // 👉 GUARDAMOS EL AVATAR
+                });
+            }
+
+            // 2. Traemos SOLO los pronósticos de mi liga
+            let pronosticos = [];
+            if (correosValidos.length > 0) {
+                const { data } = await clienteSupabase
+                    .from('pronosticos')
+                    .select('usuario, partido_id, goles_local, goles_visita')
+                    .in('usuario', correosValidos);
+                if (data) pronosticos = data;
+            }
+
+            // 3. Traemos los partidos oficiales
+            const { data: partidos } = await clienteSupabase
+                .from('partidos')
+                .select('id, resultado_local, resultado_visita, fase')
+                .not('resultado_local', 'is', null);
+
+            const puntajes = {};
+            // Inicializamos a todos en 0
+            if (companeros) {
+                companeros.forEach(c => puntajes[c.correo] = 0);
+            }
+
+            const resultadosOficiales = {};
+            if (partidos) {
+                partidos.forEach(p => { resultadosOficiales[p.id] = p; });
+            }
+
+            // 4. Matemáticas de Puntuación (RESCATADAS: 5/3 pts normal, 10/5 pts Final)
+            pronosticos.forEach(p => {
+                const oficial = resultadosOficiales[p.partido_id];
+                if (oficial && p.goles_local !== null && p.goles_visita !== null) {
+                    const diffPronostico = p.goles_local - p.goles_visita;
+                    const diffOficial = oficial.resultado_local - oficial.resultado_visita;
+
+                    // Detectamos si es la Gran Final
+                    const esFinal = oficial.fase && oficial.fase.toUpperCase() === 'FINAL';
+                    const premioExacto = esFinal ? 10 : 5;
+                    const premioTendencia = esFinal ? 5 : 3;
+
+                    if (p.goles_local === oficial.resultado_local && p.goles_visita === oficial.resultado_visita) {
+                        puntajes[p.usuario] += premioExacto; // Marcador exacto
+                    } else if (
+                        (diffPronostico > 0 && diffOficial > 0) || // Ambos local
+                        (diffPronostico < 0 && diffOficial < 0) || // Ambos visita
+                        (diffPronostico === 0 && diffOficial === 0)   // Ambos empate
+                    ) {
+                        puntajes[p.usuario] += premioTendencia; // Tendencia
+                    }
+                }
+            });
+
+            // 5. Ordenar de mayor a menor
+            const rankingArray = Object.entries(puntajes).map(([usuario, puntos]) => ({ usuario, puntos }));
+            rankingArray.sort((a, b) => b.puntos - a.puntos);
+
+            const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
+            const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
+
+            if (mundialTerminado && rankingArray.length > 0) {
+                setTimeout(lanzarFuegosArtificiales, 500); 
+            }
+
+            // 6. Dibujar HTML
+            let htmlRanking = '';
+            rankingArray.forEach((user, index) => {
+                const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`;
+            
+                // 👉 TRAEMOS EL AVATAR Y LO METEMOS EN EL HTML
+                const nombreCorto = mapaNicks[user.usuario] || user.usuario.split('@')[0]; 
+                const avatarJugador = mapaAvatares[user.usuario] || '⚽'; 
+            
+            let estiloCampeon = '';
+            let corona = '';
+            if (mundialTerminado && index === 0) {
+                estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold;';
+                corona = '<div class="corona-ganador">👑</div>';
+            }
+            
+            htmlRanking += `
+                ${corona}
+                <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
+                    <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
+                    <span><b>${user.puntos}</b> pts</span>
+                </div>
+            `;
+            });
+
+            if (rankingArray.length === 0) {
+                htmlRanking = '<p style="text-align:center; color: gray;">Aún no hay jugadores en esta liga.</p>';
+            }
+
+            document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
+        }
+
+        function cerrarRanking() {
+            document.getElementById('vista-ranking').style.display = 'none';
+            document.getElementById('vista-quiniela').style.display = 'block';
+        }
+
+        // --- 8. RELOJ MAESTRO Y CANDADOS POR JORNADA ---
+        function calcularCandados(partidos) {
+            const ahora = new Date(); // Lee la hora exacta del dispositivo en este instante
+            const estadoJornadas = {}; 
+
+            // 1. Encontrar cuál es el PRIMER partido de cada jornada
+            partidos.forEach(p => {
+                if (p.jornada && p.fecha_hora) {
+                    const horaPartido = new Date(p.fecha_hora);
+
+                    // Si la jornada no existe aún en nuestro diccionario, o si encontramos un partido que se juega más temprano, actualizamos el registro
+                    if (!estadoJornadas[p.jornada] || horaPartido < estadoJornadas[p.jornada].primerPartido) {
+                        estadoJornadas[p.jornada] = {
+                            primerPartido: horaPartido
+                        };
+                    }
+                }
+            });
+
+            // 2. Definir si el candado está abierto o cerrado
+            for (const [jornada, datos] of Object.entries(estadoJornadas)) {
+                // Restamos 1 hora (3.600.000 milisegundos) a la hora del primer partido
+                const horaCierre = new Date(datos.primerPartido.getTime() - 3600000);
+
+                // Si la hora actual ya superó la hora de cierre, la jornada se bloquea
+                estadoJornadas[jornada].bloqueada = (ahora >= horaCierre);
+            }
+
+            return estadoJornadas;
+        }
+        // --- 9. NIEBLA DE GUERRA (ESPIONAJE DE RIVALES) ---
+            // Recibimos el parámetro nickRival
+        async function verPronosticosDe(correoRival, nickRival) {
+            // Ocultar ranking y mostrar la vista del rival
+            document.getElementById('vista-ranking').style.display = 'none';
+            document.getElementById('vista-rival').style.display = 'block';
+            
+            // Usamos el nickRival directamente en el título (sin el split)
+            document.getElementById('titulo-rival').innerText = `Pronósticos de ${nickRival}`;
+
+            // Traer todos los partidos y activar el Reloj Maestro
+            const { data: partidos } = await clienteSupabase
+                .from('partidos')
+                .select('id, local, visita, jornada, fecha_hora')
+                .order('id', { ascending: true });
+            
+            const candados = calcularCandados(partidos);
+
+            // Traer los pronósticos específicos de este rival
+            const { data: pronosticosRival } = await clienteSupabase
+                .from('pronosticos')
+                .select('partido_id, goles_local, goles_visita')
+                .eq('usuario', correoRival);
+
+            const mapaRival = {};
+            if(pronosticosRival) {
+                pronosticosRival.forEach(p => mapaRival[p.partido_id] = p);
+            }
+
+            let htmlRival = '';
+            
+            partidos.forEach(p => {
+                const prediccion = mapaRival[p.id];
+                const jornadaBloqueada = candados[p.jornada] ? candados[p.jornada].bloqueada : false;
+
+                let textoLocal = '<span style="color: gray;">-</span>';
+                let textoVisita = '<span style="color: gray;">-</span>';
+
+                // Aquí ocurre la Niebla de Guerra
+                if (prediccion) {
+                    if (jornadaBloqueada) {
+                        // Si ya es muy tarde para cambiarlo, se levanta la niebla y vemos el resultado
+                        textoLocal = `<b>${prediccion.goles_local}</b>`;
+                        textoVisita = `<b>${prediccion.goles_visita}</b>`;
+                    } else {
+                        // Si la jornada sigue abierta, aparece el candado (Niebla de Guerra)
+                        textoLocal = '🔒';
+                        textoVisita = '🔒';
+                    }
+                }
+
+                htmlRival += `
+                    <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px;">${p.local} vs ${p.visita}</span>
+                        <span style="background: #f8f9fa; padding: 5px 15px; border-radius: 8px; font-size: 18px;">
+                            ${textoLocal} - ${textoVisita}
+                        </span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('lista-rival').innerHTML = htmlRival;
+        }
+
+        function cerrarVistaRival() {
+            document.getElementById('vista-rival').style.display = 'none';
+            document.getElementById('vista-ranking').style.display = 'block';
+        }
+
+        // --- 10. CONTROL DE PESTAÑAS (TABS) ---
+        function cambiarPestana(idJornada, botonRend) {
+            // Ocultar todas las cajas de jornadas
+            document.querySelectorAll('.jornada-content').forEach(div => div.style.display = 'none');
+            
+            // Quitar el color verde de todos los botones
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Mostrar solo la caja seleccionada y pintar su botón
+            document.getElementById(`contenedor-jornada-${idJornada}`).style.display = 'block';
+            botonRend.classList.add('active');
+            
+            // 👇 Disparar fuegos artificiales si es la Final
+            if (idJornada === 8) lanzarFuegosArtificiales();
+        }
+
+        // --- 11. EFECTOS VISUALES (FUEGOS ARTIFICIALES) ---
+        function lanzarFuegosArtificiales() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) { return clearInterval(interval); }
+                var particleCount = 50 * (timeLeft / duration);
+                
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+        function mostrarPalmares() {
+            document.getElementById('vista-quiniela').style.display = 'none';
+            document.getElementById('vista-ranking').style.display = 'none';
+            // Aseguramos que se oculte también la vista del rival si estaba abierta
+            document.getElementById('vista-rival').style.display = 'none'; 
+            
+            document.getElementById('vista-palmares').style.display = 'block';
+        }
+
+        function cerrarPalmares() {
+            document.getElementById('vista-palmares').style.display = 'none';
+            document.getElementById('vista-quiniela').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+﻿local,visita,fase
+México,Sudáfrica,Grupo A
+Corea del Sur,República Checa,Grupo A
+México,Corea del Sur,Grupo A
+República Checa,Sudáfrica,Grupo A
+República Checa,México,Grupo A
+Sudáfrica,Corea del Sur,Grupo A
+Canadá,Bosnia y Herzegovina,Grupo B
+Catar,Suiza,Grupo B
+Canadá,Catar,Grupo B
+Suiza,Bosnia y Herzegovina,Grupo B
+Suiza,Canadá,Grupo B
+Bosnia y Herzegovina,Catar,Grupo B
+Brasil,Marruecos,Grupo C
+Haití,Escocia,Grupo C
+Brasil,Haití,Grupo C
+Escocia,Marruecos,Grupo C
+Escocia,Brasil,Grupo C
+Marruecos,Haití,Grupo C
+Estados Unidos,Paraguay,Grupo D
+Australia,Turquía,Grupo D
+Estados Unidos,Australia,Grupo D
+Turquía,Paraguay,Grupo D
+Turquía,Estados Unidos,Grupo D
+Paraguay,Australia,Grupo D
+Alemania,Curazao,Grupo E
+Costa de Marfil,Ecuador,Grupo E
+Alemania,Costa de Marfil,Grupo E
+Ecuador,Curazao,Grupo E
+Ecuador,Alemania,Grupo E
+Curazao,Costa de Marfil,Grupo E
+Países Bajos,Japón,Grupo F
+Suecia,Túnez,Grupo F
+Países Bajos,Suecia,Grupo F
+Túnez,Japón,Grupo F
+Túnez,Países Bajos,Grupo F
+Japón,Suecia,Grupo F
+Bélgica,Egipto,Grupo G
+Irán,Nueva Zelanda,Grupo G
+Bélgica,Irán,Grupo G
+Nueva Zelanda,Egipto,Grupo G
+Nueva Zelanda,Bélgica,Grupo G
+Egipto,Irán,Grupo G
+España,Cabo Verde,Grupo H
+Arabia Saudí,Uruguay,Grupo H
+España,Arabia Saudí,Grupo H
+Uruguay,Cabo Verde,Grupo H
+Uruguay,España,Grupo H
+Cabo Verde,Arabia Saudí,Grupo H
+Francia,Senegal,Grupo I
+Irak,Noruega,Grupo I
+Francia,Irak,Grupo I
+Noruega,Senegal,Grupo I
+Noruega,Francia,Grupo I
+Senegal,Irak,Grupo I
+Argentina,Argelia,Grupo J
+Austria,Jordania,Grupo J
+Argentina,Austria,Grupo J
+Jordania,Argelia,Grupo J
+Jordania,Argentina,Grupo J
+Argelia,Austria,Grupo J
+Portugal,RD Congo,Grupo K
+Uzbekistán,Colombia,Grupo K
+Portugal,Uzbekistán,Grupo K
+Colombia,RD Congo,Grupo K
+Colombia,Portugal,Grupo K
+RD Congo,Uzbekistán,Grupo K
+Inglaterra,Croacia,Grupo L
+Ghana,Panamá,Grupo L
+Inglaterra,Ghana,Grupo L
+Panamá,Croacia,Grupo L
+Panamá,Inglaterra,Grupo L
+Croacia,Ghana,Grupo L
+Clasificado R32-1A,Clasificado R32-1B,Dieciseisavos de Final
+Clasificado R32-2A,Clasificado R32-2B,Dieciseisavos de Final
+Clasificado R32-3A,Clasificado R32-3B,Dieciseisavos de Final
+Clasificado R32-4A,Clasificado R32-4B,Dieciseisavos de Final
+Clasificado R32-5A,Clasificado R32-5B,Dieciseisavos de Final
+Clasificado R32-6A,Clasificado R32-6B,Dieciseisavos de Final
+Clasificado R32-7A,Clasificado R32-7B,Dieciseisavos de Final
+Clasificado R32-8A,Clasificado R32-8B,Dieciseisavos de Final
+Clasificado R32-9A,Clasificado R32-9B,Dieciseisavos de Final
+Clasificado R32-10A,Clasificado R32-10B,Dieciseisavos de Final
+Clasificado R32-11A,Clasificado R32-11B,Dieciseisavos de Final
+Clasificado R32-12A,Clasificado R32-12B,Dieciseisavos de Final
+Clasificado R32-13A,Clasificado R32-13B,Dieciseisavos de Final
+Clasificado R32-14A,Clasificado R32-14B,Dieciseisavos de Final
+Clasificado R32-15A,Clasificado R32-15B,Dieciseisavos de Final
+Clasificado R32-16A,Clasificado R32-16B,Dieciseisavos de Final
+Ganador Dieciseisavos 1,Ganador Dieciseisavos 2,Octavos de Final
+Ganador Dieciseisavos 3,Ganador Dieciseisavos 4,Octavos de Final
+Ganador Dieciseisavos 5,Ganador Dieciseisavos 6,Octavos de Final
+Ganador Dieciseisavos 7,Ganador Dieciseisavos 8,Octavos de Final
+Ganador Dieciseisavos 9,Ganador Dieciseisavos 10,Octavos de Final
+Ganador Dieciseisavos 11,Ganador Dieciseisavos 12,Octavos de Final
+Ganador Dieciseisavos 13,Ganador Dieciseisavos 14,Octavos de Final
+Ganador Dieciseisavos 15,Ganador Dieciseisavos 16,Octavos de Final
+Ganador Octavos 1,Ganador Octavos 2,Cuartos de Final
+Ganador Octavos 3,Ganador Octavos 4,Cuartos de Final
+Ganador Octavos 5,Ganador Octavos 6,Cuartos de Final
+Ganador Octavos 7,Ganador Octavos 8,Cuartos de Final
+Ganador Cuartos 1,Ganador Cuartos 2,Semifinal
+Ganador Cuartos 3,Ganador Cuartos 4,Semifinal
+Perdedor Semifinal 1,Perdedor Semifinal 2,Tercer Puesto
+Ganador Semifinal 1,Ganador Semifinal 2,Final
