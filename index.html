@@ -674,7 +674,7 @@
             const { error } = await clienteSupabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { 
-                    redirectTo: 'http://localhost:5500/' 
+                    redirectTo: window.location.href
                 }
             });
             if (error) alert("Error al iniciar con Google: " + error.message);
@@ -684,7 +684,7 @@
             const { error } = await clienteSupabase.auth.signInWithOAuth({
                 provider: 'facebook',
                 options: { 
-                    redirectTo: 'http://localhost:5500/' 
+                    redirectTo: window.location.href
                 }
             });
             if (error) alert("Error al iniciar con Facebook: " + error.message);
