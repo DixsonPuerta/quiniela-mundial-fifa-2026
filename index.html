@@ -10,6 +10,18 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f6f8; padding: 20px; }
         .contenedor { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        .bandera-premium {
+            width: 32px;
+            height: auto;
+            border-radius: 4px; /* Bordes ligeramente redondeados */
+            box-shadow: 0px 3px 6px rgba(0,0,0,0.4);
+            vertical-align: middle;
+            transition: transform 0.2s;
+        }
+        .bandera-premium:hover {
+            transform: scale(1.1);
+        }
         
         /* Estilos Pantalla Login */
         #vista-login { display: block; }
@@ -209,19 +221,68 @@
 
     </div> <div id="vista-ranking" class="contenedor" style="display: none;">
         <h2>🏆 Tabla de Posiciones</h2>
+        
+        <div id="podium-mundial" style="display: none; text-align: center; margin-bottom: 30px; background: #1a252f; padding: 20px; border-radius: 10px; border: 2px solid #27ae60; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+            <h3 style="color: #2ecc71; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px;">🌍 Copa del Mundo 2026 🌍</h3>
+            
+            <div style="display: flex; justify-content: center; align-items: flex-end; gap: 10px; height: 160px;">
+                <div style="display: flex; flex-direction: column; align-items: center; width: 30%;">
+                    <img id="equipo-2-bandera" src="https://flagcdn.com/w40/fr.png" class="bandera-premium" style="width: 45px; margin-bottom: 5px;">
+                    <span id="equipo-2-nombre" style="font-weight: bold; font-size: 13px; color: white;">Francia</span>
+                    <div style="background: linear-gradient(to top, #7f8c8d, #bdc3c7); width: 100%; height: 70px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; font-weight: bold; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2);">2</div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; width: 40%; z-index: 10;">
+                    <img id="equipo-1-bandera" src="https://flagcdn.com/w40/br.png" class="bandera-premium" style="width: 60px; margin-bottom: 5px; box-shadow: 0 0 15px rgba(255,215,0,0.8);">
+                    <span id="equipo-1-nombre" style="font-weight: bold; font-size: 15px; color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.5);">Brasil</span>
+                    <div style="background: linear-gradient(to top, #d35400, #f1c40f); width: 100%; height: 110px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 32px; font-weight: bold; box-shadow: 0 -5px 15px rgba(243,156,18,0.4);">1</div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; width: 30%;">
+                    <img id="equipo-3-bandera" src="https://flagcdn.com/w40/es.png" class="bandera-premium" style="width: 45px; margin-bottom: 5px;">
+                    <span id="equipo-3-nombre" style="font-weight: bold; font-size: 13px; color: #cd7f32;">España</span>
+                    <div style="background: linear-gradient(to top, #a0522d, #cd7f32); width: 100%; height: 50px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2);">3</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="podium-final" style="display: none; text-align: center; margin-bottom: 30px; background: #1a252f; padding: 20px; border-radius: 10px; border: 2px solid #f39c12; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+            <h3 style="color: #ffd700; margin-top: 0; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px;">👑 Campeones del Mundo 👑</h3>
+            
+            <div style="display: flex; justify-content: center; align-items: flex-end; gap: 10px; height: 160px;">
+                <div style="display: flex; flex-direction: column; align-items: center; width: 30%;">
+                    <span id="podium-2-avatar" style="font-size: 30px; margin-bottom: 5px;">🥈</span>
+                    <span id="podium-2-nombre" style="font-weight: bold; font-size: 13px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">---</span>
+                    <div style="background: linear-gradient(to top, #7f8c8d, #bdc3c7); width: 100%; height: 70px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; font-weight: bold; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2);">2</div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; width: 40%; z-index: 10;">
+                    <span id="podium-1-avatar" style="font-size: 40px; margin-bottom: 5px;">🥇</span>
+                    <span id="podium-1-nombre" style="font-weight: bold; font-size: 15px; color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">---</span>
+                    <div style="background: linear-gradient(to top, #d35400, #f1c40f); width: 100%; height: 110px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 32px; font-weight: bold; box-shadow: 0 -5px 15px rgba(243,156,18,0.4);">1</div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; align-items: center; width: 30%;">
+                    <span id="podium-3-avatar" style="font-size: 30px; margin-bottom: 5px;">🥉</span>
+                    <span id="podium-3-nombre" style="font-weight: bold; font-size: 13px; color: #cd7f32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">---</span>
+                    <div style="background: linear-gradient(to top, #a0522d, #cd7f32); width: 100%; height: 50px; border-radius: 5px 5px 0 0; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2);">3</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ganadores-jornada" style="background: #2c3e50; border-radius: 8px; padding: 15px; margin-bottom: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+            <h3 style="color: #2ecc71; text-align: center; margin-top: 0; font-size: 16px; border-bottom: 1px solid #34495e; padding-bottom: 10px;">🔥 MVP por Jornada</h3>
+            <div id="lista-ganadores-jornada" style="color: white; font-size: 14px; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                <p style="text-align: center; color: gray; font-size: 12px; margin: 0;">Esperando fin de la primera jornada...</p>
+            </div>
+        </div>
+        
         <div id="tabla-posiciones-lista" style="text-align: left; margin-top: 20px;">
             <p>Calculando puntajes...</p>
         </div>
         <button class="btn-logout" onclick="cerrarRanking()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver a mis pronósticos</button>
     </div>
 
-    <div id="vista-rival" class="contenedor" style="display: none;">
-        <h2 id="titulo-rival">Pronósticos de...</h2>
-        <div id="lista-rival" style="text-align: left; margin-top: 20px;">
-            <p>Cargando datos clasificados...</p>
-        </div>
-        <button class="btn-logout" onclick="cerrarVistaRival()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver al Ranking</button>
-    </div>
     <div id="vista-rival" class="contenedor" style="display: none;">
         <h2 id="titulo-rival">Pronósticos de...</h2>
         <div id="lista-rival" style="text-align: left; margin-top: 20px;">
@@ -322,6 +383,23 @@
         let miNickname = ''; // Para guardar el apodo del jugador
         let miGrupo = '';    // Para guardar el código de la liga
         let miAvatar = '⚽'; // Nuevo: Para guardar el avatar elegido
+
+        // Función blindada que devuelve estrictamente una IMAGEN
+        function obtenerBandera(nombrePais) {
+            if (!nombrePais) return '';
+            
+            // Convertimos el texto a minúsculas y quitamos espacios extra
+            const nombreNormalizado = nombrePais.toLowerCase().trim();
+            const codigo = codigosBanderas[nombreNormalizado];
+            
+            if (codigo) {
+                // AQUÍ ESTÁ LA MAGIA: Devuelve la etiqueta <img> real
+                return `<img src="https://flagcdn.com/w40/${codigo}.png" alt="${nombrePais}" class="bandera-premium">`;
+            } else {
+                // Bandera blanca si el equipo no está en el diccionario
+                return `<span style="font-size: 24px;">🏳️</span>`; 
+            }
+        }
 
         // --- GESTIÓN DE PERFILES Y LIGAS ---
 
@@ -505,25 +583,63 @@
             }
         }
 
-        // --- 2. DICCIONARIO DE BANDERAS Y HORARIOS ---
-        const banderas = {
-            "México": "🇲🇽", "Sudáfrica": "🇿🇦", "Corea del Sur": "🇰🇷", "República Checa": "🇨🇿",
-            "Canadá": "🇨🇦", "Bosnia y Herzegovina": "🇧🇦", "Catar": "🇶🇦", "Suiza": "🇨🇭",
-            "Brasil": "🇧🇷", "Marruecos": "🇲🇦", "Haití": "🇭🇹", "Escocia": "🏴",
-            "Estados Unidos": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turquía": "🇹🇷",
-            "Alemania": "🇩🇪", "Curazao": "🇨🇼", "Costa de Marfil": "🇨🇮", "Ecuador": "🇪🇨",
-            "Países Bajos": "🇳🇱", "Japón": "🇯🇵", "Suecia": "🇸🇪", "Túnez": "🇹🇳",
-            "Bélgica": "🇧🇪", "Egipto": "🇪🇬", "Irán": "🇮🇷", "Nueva Zelanda": "🇳🇿",
-            "España": "🇪🇸", "Cabo Verde": "🇨🇻", "Arabia Saudí": "🇸🇦", "Uruguay": "🇺🇾",
-            "Francia": "🇫🇷", "Senegal": "🇸🇳", "Irak": "🇮🇶", "Noruega": "🇳🇴",
-            "Argentina": "🇦🇷", "Argelia": "🇩🇿", "Austria": "🇦🇹", "Jordania": "🇯🇴",
-            "Portugal": "🇵🇹", "RD Congo": "🇨🇩", "Uzbekistán": "🇺🇿", "Colombia": "🇨🇴",
-            "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croacia": "🇭🇷", "Ghana": "🇬🇭", "Panamá": "🇵🇦",
-            "Venezuela": "🇻🇪", "Perú": "🇵🇪"
+        // 🌍 DICCIONARIO OFICIAL DE BANDERAS (Imágenes FlagCDN) 🌍
+        const codigosBanderas = {
+            "argentina": "ar", "brasil": "br", "uruguay": "uy", "colombia": "co", 
+            "chile": "cl", "ecuador": "ec", "perú": "pe", "peru": "pe", "venezuela": "ve",
+            "méxico": "mx", "mexico": "mx", "estados unidos": "us", "canadá": "ca", "canada": "ca",
+            "costa rica": "cr", "francia": "fr", "españa": "es", "espana": "es", 
+            "inglaterra": "gb-eng", "alemania": "de", "portugal": "pt", "italia": "it", 
+            "países bajos": "nl", "paises bajos": "nl", "bélgica": "be", "belgica": "be",
+            "croacia": "hr", "dinamarca": "dk", "suiza": "ch", "senegal": "sn", 
+            "marruecos": "ma", "japón": "jp", "japon": "jp", "corea del sur": "kr", 
+            "arabia saudita": "sa", "arabia saudí": "sa", "australia": "au",
+            "sudáfrica": "za", "sudafrica": "za", 
+            "república checa": "cz", "republica checa": "cz",
+            "bosnia y herzegovina": "ba", 
+            "catar": "qa",
+            "haití": "ht", "haiti": "ht", 
+            "rwanda": "rw", "ruanda": "rw",
+            "paraguay": "py",
+            "túnez": "tn", "tunez": "tn",
+            "costa de marfil": "ci",
+            "egipto": "eg",
+            "irán": "ir", "iran": "ir",
+            "nueva zelanda": "nz",
+            "cabo verde": "cv",
+            "irak": "iq",
+            "somalia": "so",
+            "angola": "ao",
+            "austria": "at",
+            "armenia": "am",
+            "rd congo": "cd", "república democrática del congo": "cd",
+            "uzbekistán": "uz", "uzbekistan": "uz",
+            "ghana": "gh",
+            "panamá": "pa", "panama": "pa",
+            "togo": "tg",
+            "turquía": "tr", "turquia": "tr",
+            "escocia": "gb-sct", "gales": "gb-wls", "eslovaquia": "sk", "eslovenia": "si", 
+            "bolivia": "bo", "nigeria": "ng", "camerún": "cm", "camerun": "cm",
+            "jamaica": "jm", "honduras": "hn", "el salvador": "sv", "polonia": "pl", "suecia": "se", "curazao": "cw", "curaçao": "cw",
+            "noruega": "no",
+            "argelia": "dz",
+            "jordania": "jo"
         };
 
-        function obtenerBandera(equipo) {
-            return banderas[equipo] || "🏳️"; 
+        // Función con lógica adaptativa para nombres completos o siglas (Ej: "MÉXICO" o "MX")
+        function obtenerBandera(nombrePais) {
+            if (!nombrePais) return '';
+            
+            const nombreNormalizado = nombrePais.toLowerCase().trim();
+            
+            // Lógica para detectar si es una sigla de 2 letras o si debe buscar en el diccionario
+            const codigo = (nombreNormalizado.length === 2) ? nombreNormalizado : codigosBanderas[nombreNormalizado];
+            
+            if (codigo) {
+                return `<img src="https://flagcdn.com/w40/${codigo}.png" alt="${nombrePais}" class="bandera-premium">`;
+            } else {
+                return `<span style="font-size: 24px;">🏳️</span>`; 
+            }
         }
 
         function generarBloqueHorarios(fechaUtcString) {
@@ -934,16 +1050,16 @@
             // 1. Buscamos SOLO a los jugadores de MI liga
             const { data: companeros } = await clienteSupabase
                 .from('perfiles')
-                .select('correo, nickname, avatar') // 👉 AGREGAMOS EL AVATAR
+                .select('correo, nickname, avatar') 
                 .eq('grupo', miGrupo);
 
             const correosValidos = companeros ? companeros.map(c => c.correo) : [];
             const mapaNicks = {};
-            const mapaAvatares = {}; // 👉 NUEVO MAPA
+            const mapaAvatares = {}; 
             if (companeros) {
                 companeros.forEach(c => {
                     mapaNicks[c.correo] = c.nickname;
-                    mapaAvatares[c.correo] = c.avatar || '⚽'; // 👉 GUARDAMOS EL AVATAR
+                    mapaAvatares[c.correo] = c.avatar || '⚽'; 
                 });
             }
 
@@ -1003,35 +1119,116 @@
             rankingArray.sort((a, b) => b.puntos - a.puntos);
 
             const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
+            
+            // Lógica en vivo: Los podios solo se revelan cuando la Gran Final tiene resultado
             const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
 
             if (mundialTerminado && rankingArray.length > 0) {
                 setTimeout(lanzarFuegosArtificiales, 500); 
             }
 
-            // 6. Dibujar HTML
+            // --- 👑 LÓGICA DEL PODIUM FINAL (SEGURO) 👑 ---
+            if (mundialTerminado && rankingArray.length >= 1) {
+                document.getElementById('podium-final').style.display = 'block';
+                document.getElementById('podium-mundial').style.display = 'block'; // 👉 AGREGA ESTA LÍNEA AQUÍ
+
+            // 👇 NUEVO: Lógica para detectar a los países ganadores reales 👇
+                let campeonMundial = finalMundial.local;
+                let subcampeonMundial = finalMundial.visita;
+                if (finalMundial.resultado_visita > finalMundial.resultado_local) {
+                    campeonMundial = finalMundial.visita;
+                    subcampeonMundial = finalMundial.local;
+                }
+
+                let terceroMundial = "Por definir";
+                // Buscamos el partido por el tercer lugar
+                const partidoTercero = partidos.find(p => p.fase && (p.fase.toUpperCase().includes('TERCER') || p.fase.toUpperCase().includes('3ER')));
+                if (partidoTercero && partidoTercero.resultado_local !== null) {
+                    terceroMundial = partidoTercero.resultado_local > partidoTercero.resultado_visita ? partidoTercero.local : partidoTercero.visita;
+                }
+
+                // Inyectamos los nombres en el HTML
+                document.getElementById('equipo-1-nombre').innerText = campeonMundial;
+                document.getElementById('equipo-2-nombre').innerText = subcampeonMundial;
+                document.getElementById('equipo-3-nombre').innerText = terceroMundial;
+
+                // Usamos nuestra función de FlagCDN para extraer solo la URL de la bandera e inyectarla
+                function actualizarBanderaPodio(idHtml, nombrePais) {
+                    const elementoImg = document.getElementById(idHtml);
+                    const htmlBandera = obtenerBandera(nombrePais);
+                    const extraccionUrl = htmlBandera.match(/src="([^"]+)"/); // Rescatamos el enlace
+                    if (extraccionUrl && extraccionUrl[1]) {
+                        elementoImg.src = extraccionUrl[1];
+                    }
+                }
+                
+                actualizarBanderaPodio('equipo-1-bandera', campeonMundial);
+                actualizarBanderaPodio('equipo-2-bandera', subcampeonMundial);
+                actualizarBanderaPodio('equipo-3-bandera', terceroMundial);
+                // 👆 FIN DE LO NUEVO 👆
+
+                const oro = rankingArray[0];
+                const plata = rankingArray[1];
+                const bronce = rankingArray[2];
+
+                if (oro) {
+                    document.getElementById('podium-1-nombre').innerText = mapaNicks[oro.usuario] || oro.usuario.split('@')[0];
+                    document.getElementById('podium-1-avatar').innerText = (mapaAvatares[oro.usuario] || '⚽') + ' 🏆';
+                } else {
+                    document.getElementById('podium-1-nombre').innerText = '';
+                    document.getElementById('podium-1-avatar').innerText = '';
+                }
+                if (plata) {
+                    document.getElementById('podium-2-nombre').innerText = mapaNicks[plata.usuario] || plata.usuario.split('@')[0];
+                    document.getElementById('podium-2-avatar').innerText = mapaAvatares[plata.usuario] || '⚽';
+                } else {
+                    document.getElementById('podium-2-nombre').innerText = '';
+                    document.getElementById('podium-2-avatar').innerText = '';
+                }
+                if (bronce) {
+                    document.getElementById('podium-3-nombre').innerText = mapaNicks[bronce.usuario] || bronce.usuario.split('@')[0];
+                    document.getElementById('podium-3-avatar').innerText = mapaAvatares[bronce.usuario] || '⚽';
+                } else {
+                    document.getElementById('podium-3-nombre').innerText = '';
+                    document.getElementById('podium-3-avatar').innerText = '';
+                }
+            } else {
+                document.getElementById('podium-final').style.display = 'none';
+            }
+
+            // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP) 🔥 ---
+            let htmlJornadas = `
+                <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
+            `;
+            
+            document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
+            
+            document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
+
+            // 6. Dibujar HTML de la lista de posiciones
             let htmlRanking = '';
             rankingArray.forEach((user, index) => {
-                const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`;
-            
-                // 👉 TRAEMOS EL AVATAR Y LO METEMOS EN EL HTML
+                const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
                 const nombreCorto = mapaNicks[user.usuario] || user.usuario.split('@')[0]; 
                 const avatarJugador = mapaAvatares[user.usuario] || '⚽'; 
             
-            let estiloCampeon = '';
-            let corona = '';
-            if (mundialTerminado && index === 0) {
-                estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold;';
-                corona = '<div class="corona-ganador">👑</div>';
-            }
+                let estiloCampeon = '';
+                let corona = '';
+                if (mundialTerminado && index === 0) {
+                    // Le damos margen extra arriba para que la copa no choque con los demás elementos
+                    estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold; margin-top: 15px; margin-bottom: 10px;';
+                    
+                    // Copa posicionada matemáticamente en la esquina superior izquierda con inclinación
+                    corona = '<div style="position: absolute; top: -18px; left: -12px; font-size: 28px; transform: rotate(-15deg); filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.5));">🏆</div>';
+                }
             
-            htmlRanking += `
-                ${corona}
-                <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
-                    <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
-                    <span><b>${user.puntos}</b> pts</span>
-                </div>
-            `;
+                htmlRanking += `
+                    <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
+                        ${corona}
+                        <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
+                        <span><b>${user.puntos}</b> pts</span>
+                    </div>
+                `;
             });
 
             if (rankingArray.length === 0) {
