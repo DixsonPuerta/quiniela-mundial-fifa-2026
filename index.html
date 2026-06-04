@@ -674,7 +674,7 @@
             const { error } = await clienteSupabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: { 
-                    redirectTo: window.location.href
+                    redirectTo: window.location.origin + window.location.pathname
                 }
             });
             if (error) alert("Error al iniciar con Google: " + error.message);
@@ -684,7 +684,7 @@
             const { error } = await clienteSupabase.auth.signInWithOAuth({
                 provider: 'facebook',
                 options: { 
-                    redirectTo: window.location.href
+                    redirectTo: window.location.origin + window.location.pathname
                 }
             });
             if (error) alert("Error al iniciar con Facebook: " + error.message);
@@ -692,8 +692,8 @@
 
        async function cerrarSesion() {
             await clienteSupabase.auth.signOut();
-            window.location.hash = ''; // Limpia cualquier token viejo atascado en la URL
-            window.location.reload();
+            // Esto recarga la página enviando al usuario a la URL base limpia (sin # ni basura)
+            window.location.href = window.location.origin + window.location.pathname;
         }
 
         window.onload = function() {
