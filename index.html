@@ -690,18 +690,31 @@
             if (error) alert("Error al iniciar con Facebook: " + error.message);
         }
 
-        async function cerrarSesion() {
+       async function cerrarSesion() {
             await clienteSupabase.auth.signOut();
+            window.location.hash = ''; // Limpia cualquier token viejo atascado en la URL
             window.location.reload();
         }
 
-        window.onload = async function() {
-            const { data: { session } } = await clienteSupabase.auth.getSession();
-            if (session) {
-                usuarioActual = session.user.email;
-                mostrarQuiniela();
-            }
-        };
+        window.onload = function() {
+    // 1. Escuchar activamente cuando Facebook/Google regresen con el token
+    clienteSupabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            usuarioActual = session.user.email;
+            // Magia pura: limpia la URL gigante y la deja impecable sin recargar la página
+            window.history.replaceState({}, document.title, window.location.pathname);
+            mostrarQuiniela();
+        }
+    });
+
+    // 2. Verificación clásica (por si el usuario simplemente refrescó la página)
+    clienteSupabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            usuarioActual = session.user.email;
+            mostrarQuiniela();
+        }
+    });
+};
 
       function mostrarQuiniela() {
             // 1. Ocultamos la pantalla de login
