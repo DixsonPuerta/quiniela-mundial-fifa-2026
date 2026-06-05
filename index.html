@@ -66,9 +66,6 @@
         @media (max-width: 480px) {
             .horarios-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 480px) {
-            .horarios-grid { grid-template-columns: repeat(2, 1fr); }
-        }
 
         /* --- Pega tu código aquí abajo --- */
         .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 16px; }
@@ -173,6 +170,7 @@
             <li style="margin-bottom: 8px;"><b>Puntaje Normal:</b> 5 pts por acertar el marcador exacto, 3 pts por acertar la tendencia (ganador o empate).</li>
             <li style="margin-bottom: 8px;"><b>Puntaje Fase knockout:</b> Similar a la fase de grupos pero el resultado valido será el final entre los 90 minutos reglamentarios (No se considera el tiempo Extra ni Penales).</li>
             <li style="margin-bottom: 8px;"><b>Puntaje Gran Final:</b> 10 pts por marcador exacto, 5 pts por tendencia.</li>
+            <li style="margin-bottom: 8px;"><b>Elige a tu Campeón:</b> Antes de la fase de grupos, elige el equipo que crees que ganará el torneo. Si aciertas, ¡ganarás 10 puntos extra al final del Mundial!</li>
             <li style="margin-bottom: 8px;"><b>Niebla de Guerra (Cierre):</b> Los pronósticos se bloquean 1 hora antes del primer partido de cada jornada.</li>
             <li style="margin-bottom: 8px;"><b>Clasificación:</b> El jugador con más puntos al finalizar el torneo será coronado en su Liga Privada.</li>
             <li style="margin-bottom: 10px;">
@@ -197,8 +195,72 @@
         </button>
     </div>
 
-    <div id="vista-quiniela" class="contenedor">
-        <div class="user-info">
+    <div id="vista-campeon" style="display: none; padding: 20px; text-align: center; max-width: 600px; margin: auto; background: #f9f9f9; border-radius: 8px; border-top: 5px solid #8e44ad; margin-bottom: 20px;">
+    <h2 style="color: #8e44ad; margin-top: 0;">🔮 Pronóstico a Largo Plazo</h2>
+    <p>Elige al país que levantará la Copa del Mundo. <br>
+    <b>Premio:</b> +10 puntos en la tabla general.</p>
+    <p style="color: #c0392b; font-size: 13px; font-weight: bold;">⚠️ Se bloquea 1 hora antes del partido inaugural.</p>
+    
+    <select id="select-campeon" style="padding: 10px; font-size: 16px; border-radius: 5px; width: 100%; max-width: 300px; margin-bottom: 20px; text-align: center;">
+    <option value="">-- Selecciona un País --</option>
+    <option value="Alemania">Alemania</option>
+    <option value="Arabia Saudí">Arabia Saudí</option>
+    <option value="Argelia">Argelia</option>
+    <option value="Argentina">Argentina</option>
+    <option value="Australia">Australia</option>
+    <option value="Austria">Austria</option>
+    <option value="Bosnia y Herzegovina">Bosnia y Herzegovina</option>
+    <option value="Brasil">Brasil</option>
+    <option value="Bélgica">Bélgica</option>
+    <option value="Cabo Verde">Cabo Verde</option>
+    <option value="Canadá">Canadá</option>
+    <option value="Catar">Catar</option>
+    <option value="Colombia">Colombia</option>
+    <option value="Corea del Sur">Corea del Sur</option>
+    <option value="Costa de Marfil">Costa de Marfil</option>
+    <option value="Croacia">Croacia</option>
+    <option value="Ecuador">Ecuador</option>
+    <option value="Egipto">Egipto</option>
+    <option value="Escocia">Escocia</option>
+    <option value="España">España</option>
+    <option value="Estados Unidos">Estados Unidos</option>
+    <option value="Francia">Francia</option>
+    <option value="Ghana">Ghana</option>
+    <option value="Haití">Haití</option>
+    <option value="Inglaterra">Inglaterra</option>
+    <option value="Irak">Irak</option>
+    <option value="Irán">Irán</option>
+    <option value="Japón">Japón</option>
+    <option value="Jordania">Jordania</option>
+    <option value="Marruecos">Marruecos</option>
+    <option value="México">México</option>
+    <option value="Nigeria">Nigeria</option>
+    <option value="Noruega">Noruega</option>
+    <option value="Nueva Zelanda">Nueva Zelanda</option>
+    <option value="Panamá">Panamá</option>
+    <option value="Paraguay">Paraguay</option>
+    <option value="Países Bajos">Países Bajos</option>
+    <option value="Portugal">Portugal</option>
+    <option value="República Checa">República Checa</option>
+    <option value="República del Congo">República del Congo</option>
+    <option value="Senegal">Senegal</option>
+    <option value="Sudáfrica">Sudáfrica</option>
+    <option value="Suecia">Suecia</option>
+    <option value="Suiza">Suiza</option>
+    <option value="Turquía">Turquía</option>
+    <option value="Túnez">Túnez</option>
+    <option value="Uruguay">Uruguay</option>
+    <option value="Uzbekistán">Uzbekistán</option>
+</select>
+<br>
+        <button onclick="guardarCampeon()" style="background-color: #8e44ad; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+        💾 Guardar Mi Campeón
+        </button>
+        <p id="msg-campeon" style="margin-top: 15px; font-weight: bold;"></p>
+    </div>
+
+        <div id="vista-quiniela" class="contenedor">
+            <div class="user-info">
             <span id="nombre-usuario">Cargando...</span>
             <div>
                 <button id="btn-palmares" class="btn-admin" style="display: none; background: linear-gradient(45deg, #ffd700, #f39c12); color: #000; font-weight: bold; border: 1px solid #d35400; box-shadow: 0 4px 6px rgba(243,156,18,0.3);" onclick="mostrarPalmares()">🌟 Palmarés</button>
@@ -210,6 +272,7 @@
 
         <h2>Mis Pronósticos ⚽</h2>
     <div id="tabs-jornadas" class="tabs-container">
+            <button class="tab-btn" style="background-color: #8e44ad; color: white; border-color: #8e44ad; font-weight: bold;" onclick="cargarVistaCampeon()">🏆 Tu Campeón</button>
             <button class="tab-btn active" onclick="cambiarPestana(1, this)">Jornada 1</button>
             <button class="tab-btn" onclick="cambiarPestana(2, this)">Jornada 2</button>
             <button class="tab-btn" onclick="cambiarPestana(3, this)">Jornada 3</button>
@@ -392,6 +455,66 @@
         let miGrupo = '';    // Para guardar el código de la liga
         let miAvatar = '⚽'; // Nuevo: Para guardar el avatar elegido
 
+        // --- LÓGICA: ELIGE A TU CAMPEÓN ---
+        const FECHA_LIMITE_CAMPEON = new Date('2026-06-11T14:00:00-04:00'); // Ajusta la fecha real
+
+async function cargarVistaCampeon() {
+    document.getElementById('vista-quiniela').style.display = 'none';
+    document.getElementById('vista-ranking').style.display = 'none';
+    document.getElementById('vista-palmares').style.display = 'none';
+    document.getElementById('vista-rival').style.display = 'none';
+    document.getElementById('vista-campeon').style.display = 'block';
+    
+        const botonesTabs = document.querySelectorAll('.tab-btn');
+        botonesTabs.forEach(btn => btn.classList.remove('active'));
+    
+        const { data } = await clienteSupabase
+        .from('perfiles')
+        .select('campeon_elegido')
+        .eq('correo', usuarioActual)
+        .single();
+        
+    if (data && data.campeon_elegido) {
+        document.getElementById('select-campeon').value = data.campeon_elegido;
+        document.getElementById('msg-campeon').style.color = '#27ae60';
+        document.getElementById('msg-campeon').innerText = `Tu candidato actual es: ${data.campeon_elegido} 🏆`;
+    }
+}
+
+async function guardarCampeon() {
+    const ahora = new Date();
+    const msgDiv = document.getElementById('msg-campeon');
+
+    if (ahora > FECHA_LIMITE_CAMPEON) {
+        msgDiv.style.color = '#c0392b';
+        msgDiv.innerText = "⏳ ¡Tiempo agotado! La selección está bloqueada.";
+        return;
+    }
+
+    const seleccion = document.getElementById('select-campeon').value;
+    if (!seleccion) {
+        msgDiv.style.color = '#c0392b';
+        msgDiv.innerText = "Por favor selecciona un país de la lista.";
+        return;
+    }
+
+    msgDiv.style.color = 'gray';
+    msgDiv.innerText = "Guardando...";
+
+    const { error } = await clienteSupabase
+        .from('perfiles')
+        .update({ campeon_elegido: seleccion })
+        .eq('correo', usuarioActual);
+
+    if (error) {
+        msgDiv.style.color = '#c0392b';
+        msgDiv.innerText = "Error al guardar: " + error.message;
+    } else {
+        msgDiv.style.color = '#27ae60';
+        msgDiv.innerText = `¡Guardado! Vas con ${seleccion} hasta la muerte. 🏆`;
+    }
+}
+
         // Función blindada que devuelve estrictamente una IMAGEN
         function obtenerBandera(nombrePais) {
             if (!nombrePais) return '';
@@ -465,16 +588,7 @@
                 } else {
                     document.getElementById('btn-palmares').style.display = 'none';
                 }
-        function mostrarPalmares() {
-            document.getElementById('vista-quiniela').style.display = 'none';
-            document.getElementById('vista-ranking').style.display = 'none';
-            document.getElementById('vista-palmares').style.display = 'block';
-        }
-
-        function cerrarPalmares() {
-            document.getElementById('vista-palmares').style.display = 'none';
-            document.getElementById('vista-quiniela').style.display = 'block';
-        }
+        
             } else {
                 // Es nuevo, le mostramos el formulario
                 document.getElementById('fondo-modal').style.display = 'block';
@@ -1072,7 +1186,7 @@ async function mostrarRanking() {
     // 1. Buscamos SOLO a los jugadores de MI liga
     const { data: companeros } = await clienteSupabase
         .from('perfiles')
-        .select('correo, nickname, avatar') 
+        .select('correo, nickname, avatar, campeon_elegido')
         .eq('grupo', miGrupo);
 
     const correosValidos = companeros ? companeros.map(c => c.correo) : [];
@@ -1148,11 +1262,30 @@ async function mostrarRanking() {
         }
     });
 
-    // 5. MOTOR DE DESEMPATE EN CASCADA
+    // --- NUEVA LÓGICA: DETECTAR AL CAMPEÓN REAL ---
+    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
+    let campeonMundialDefinitivo = null;
+    
+    // Si la final ya se jugó y tiene un resultado oficial
+    if (finalMundial && finalMundial.resultado_local !== null) {
+        campeonMundialDefinitivo = finalMundial.resultado_local > finalMundial.resultado_visita 
+            ? finalMundial.local 
+            : finalMundial.visita;
+    }
+
+    // 5. MOTOR DE DESEMPATE EN CASCADA (Actualizado con Bono)
     let rankingArray = Object.keys(puntajes).map(correo => {
+        let bonoCampeon = 0;
+        const perfilJugador = companeros.find(c => c.correo === correo);
+        
+        // Si el mundial terminó y el jugador acertó, suma 10 puntos al total
+        if (campeonMundialDefinitivo && perfilJugador && perfilJugador.campeon_elegido === campeonMundialDefinitivo) {
+            bonoCampeon = 10; // ¡BINGO! Se lleva los 10 puntos extra
+        }
+
         return {
-            usuario: correo, // CORREGIDO PARA QUE FUNCIONE EL HTML
-            puntos: puntajes[correo].puntos,
+            usuario: correo,
+            puntos: puntajes[correo].puntos + bonoCampeon, // 👈 Suma los puntos + bono
             exactos: puntajes[correo].exactos,
             tendencias: puntajes[correo].tendencias,
             fecha_final: puntajes[correo].fecha_final
@@ -1172,7 +1305,6 @@ async function mostrarRanking() {
 
     // Eliminamos el bloque viejo de "const rankingArray = ..." que rompía el código
 
-    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
 
     if (mundialTerminado && rankingArray.length > 0) {
