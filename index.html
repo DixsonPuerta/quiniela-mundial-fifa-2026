@@ -561,7 +561,7 @@ async function guardarCampeon() {
                 .from('perfiles')
                 .select('nickname, grupo, avatar') 
                 .eq('correo', usuarioActual)
-                .single();
+                .maybeSingle();
 
             if (data) {
                 // Ya existe, cargamos sus datos en memoria
