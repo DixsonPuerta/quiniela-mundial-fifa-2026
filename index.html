@@ -1054,202 +1054,224 @@
             }
             alert(`⚖️ ¡Listo Jefe! Se han guardado ${guardados} marcadores oficiales.`);
         }
+        
         // --- 7. TABLA DE POSICIONES (RANKING POR LIGAS) ---
-        async function mostrarRanking() {
-            document.getElementById('vista-quiniela').style.display = 'none';
-            document.getElementById('vista-ranking').style.display = 'block';
-            document.getElementById('tabla-posiciones-lista').innerHTML = `<p style="text-align:center; color:gray;">Calculando puntajes para la liga: <b>${miGrupo}</b>...</p>`;
+async function mostrarRanking() {
+    document.getElementById('vista-quiniela').style.display = 'none';
+    document.getElementById('vista-ranking').style.display = 'block';
+    document.getElementById('tabla-posiciones-lista').innerHTML = `<p style="text-align:center; color:gray;">Calculando puntajes para la liga: <b>${miGrupo}</b>...</p>`;
 
-            // 1. Buscamos SOLO a los jugadores de MI liga
-            const { data: companeros } = await clienteSupabase
-                .from('perfiles')
-                .select('correo, nickname, avatar') 
-                .eq('grupo', miGrupo);
+    // 1. Buscamos SOLO a los jugadores de MI liga
+    const { data: companeros } = await clienteSupabase
+        .from('perfiles')
+        .select('correo, nickname, avatar') 
+        .eq('grupo', miGrupo);
 
-            const correosValidos = companeros ? companeros.map(c => c.correo) : [];
-            const mapaNicks = {};
-            const mapaAvatares = {}; 
-            if (companeros) {
-                companeros.forEach(c => {
-                    mapaNicks[c.correo] = c.nickname;
-                    mapaAvatares[c.correo] = c.avatar || '⚽'; 
-                });
+    const correosValidos = companeros ? companeros.map(c => c.correo) : [];
+    const mapaNicks = {};
+    const mapaAvatares = {}; 
+    if (companeros) {
+        companeros.forEach(c => {
+            mapaNicks[c.correo] = c.nickname;
+            mapaAvatares[c.correo] = c.avatar || '⚽'; 
+        });
+    }
+
+    // 2. Traemos SOLO los pronósticos de mi liga
+    let pronosticos = [];
+    if (correosValidos.length > 0) {
+        const { data } = await clienteSupabase
+            .from('pronosticos')
+            .select('usuario, partido_id, goles_local, goles_visita, created_at')
+            .in('usuario', correosValidos);
+        if (data) pronosticos = data;
+    }
+
+    // 3. Traemos los partidos oficiales
+    const { data: partidos } = await clienteSupabase
+        .from('partidos')
+        .select('id, resultado_local, resultado_visita, fase')
+        .not('resultado_local', 'is', null);
+
+    const puntajes = {};
+    // Inicializamos a todos con estructura de desempate
+    if (companeros) {
+        companeros.forEach(c => puntajes[c.correo] = {
+            puntos: 0,
+            exactos: 0,
+            tendencias: 0,
+            fecha_final: null
+        });
+    }
+
+    const resultadosOficiales = {};
+    if (partidos) {
+        partidos.forEach(p => { resultadosOficiales[p.id] = p; });
+    }
+
+    // 4. Matemáticas de Puntuación
+    pronosticos.forEach(p => {
+        const oficial = resultadosOficiales[p.partido_id];
+        if (oficial && p.goles_local !== null && p.goles_visita !== null) {
+            const diffPronostico = p.goles_local - p.goles_visita;
+            const diffOficial = oficial.resultado_local - oficial.resultado_visita;
+
+            // Detectamos si es la Gran Final
+            const esFinal = oficial.fase && oficial.fase.toUpperCase() === 'FINAL';
+            const premioExacto = esFinal ? 10 : 5;
+            const premioTendencia = esFinal ? 5 : 3;
+
+            if (p.goles_local === oficial.resultado_local && p.goles_visita === oficial.resultado_visita) {
+                puntajes[p.usuario].puntos += premioExacto; 
+                puntajes[p.usuario].exactos += 1; 
+            } else if (
+                (diffPronostico > 0 && diffOficial > 0) || // Ambos local
+                (diffPronostico < 0 && diffOficial < 0) || // Ambos visita
+                (diffPronostico === 0 && diffOficial === 0)  // Ambos empate
+            ) {
+                puntajes[p.usuario].puntos += premioTendencia; 
+                puntajes[p.usuario].tendencias += 1; 
             }
 
-            // 2. Traemos SOLO los pronósticos de mi liga
-            let pronosticos = [];
-            if (correosValidos.length > 0) {
-                const { data } = await clienteSupabase
-                    .from('pronosticos')
-                    .select('usuario, partido_id, goles_local, goles_visita')
-                    .in('usuario', correosValidos);
-                if (data) pronosticos = data;
+            // Atrapamos la fecha si es el partido de la Gran Final para el fotofinish
+            if (esFinal) {
+                puntajes[p.usuario].fecha_final = p.created_at;
             }
-
-            // 3. Traemos los partidos oficiales
-            const { data: partidos } = await clienteSupabase
-                .from('partidos')
-                .select('id, resultado_local, resultado_visita, fase')
-                .not('resultado_local', 'is', null);
-
-            const puntajes = {};
-            // Inicializamos a todos en 0
-            if (companeros) {
-                companeros.forEach(c => puntajes[c.correo] = 0);
-            }
-
-            const resultadosOficiales = {};
-            if (partidos) {
-                partidos.forEach(p => { resultadosOficiales[p.id] = p; });
-            }
-
-            // 4. Matemáticas de Puntuación (RESCATADAS: 5/3 pts normal, 10/5 pts Final)
-            pronosticos.forEach(p => {
-                const oficial = resultadosOficiales[p.partido_id];
-                if (oficial && p.goles_local !== null && p.goles_visita !== null) {
-                    const diffPronostico = p.goles_local - p.goles_visita;
-                    const diffOficial = oficial.resultado_local - oficial.resultado_visita;
-
-                    // Detectamos si es la Gran Final
-                    const esFinal = oficial.fase && oficial.fase.toUpperCase() === 'FINAL';
-                    const premioExacto = esFinal ? 10 : 5;
-                    const premioTendencia = esFinal ? 5 : 3;
-
-                    if (p.goles_local === oficial.resultado_local && p.goles_visita === oficial.resultado_visita) {
-                        puntajes[p.usuario] += premioExacto; // Marcador exacto
-                    } else if (
-                        (diffPronostico > 0 && diffOficial > 0) || // Ambos local
-                        (diffPronostico < 0 && diffOficial < 0) || // Ambos visita
-                        (diffPronostico === 0 && diffOficial === 0)   // Ambos empate
-                    ) {
-                        puntajes[p.usuario] += premioTendencia; // Tendencia
-                    }
-                }
-            });
-
-            // 5. Ordenar de mayor a menor
-            const rankingArray = Object.entries(puntajes).map(([usuario, puntos]) => ({ usuario, puntos }));
-            rankingArray.sort((a, b) => b.puntos - a.puntos);
-
-            const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
-            
-            // Lógica en vivo: Los podios solo se revelan cuando la Gran Final tiene resultado
-            const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
-
-            if (mundialTerminado && rankingArray.length > 0) {
-                setTimeout(lanzarFuegosArtificiales, 500); 
-            }
-
-            // --- 👑 LÓGICA DEL PODIUM FINAL (SEGURO) 👑 ---
-            if (mundialTerminado && rankingArray.length >= 1) {
-                document.getElementById('podium-final').style.display = 'block';
-                document.getElementById('podium-mundial').style.display = 'block'; // 👉 AGREGA ESTA LÍNEA AQUÍ
-
-            // 👇 NUEVO: Lógica para detectar a los países ganadores reales 👇
-                let campeonMundial = finalMundial.local;
-                let subcampeonMundial = finalMundial.visita;
-                if (finalMundial.resultado_visita > finalMundial.resultado_local) {
-                    campeonMundial = finalMundial.visita;
-                    subcampeonMundial = finalMundial.local;
-                }
-
-                let terceroMundial = "Por definir";
-                // Buscamos el partido por el tercer lugar
-                const partidoTercero = partidos.find(p => p.fase && (p.fase.toUpperCase().includes('TERCER') || p.fase.toUpperCase().includes('3ER')));
-                if (partidoTercero && partidoTercero.resultado_local !== null) {
-                    terceroMundial = partidoTercero.resultado_local > partidoTercero.resultado_visita ? partidoTercero.local : partidoTercero.visita;
-                }
-
-                // Inyectamos los nombres en el HTML
-                document.getElementById('equipo-1-nombre').innerText = campeonMundial;
-                document.getElementById('equipo-2-nombre').innerText = subcampeonMundial;
-                document.getElementById('equipo-3-nombre').innerText = terceroMundial;
-
-                // Usamos nuestra función de FlagCDN para extraer solo la URL de la bandera e inyectarla
-                function actualizarBanderaPodio(idHtml, nombrePais) {
-                    const elementoImg = document.getElementById(idHtml);
-                    const htmlBandera = obtenerBandera(nombrePais);
-                    const extraccionUrl = htmlBandera.match(/src="([^"]+)"/); // Rescatamos el enlace
-                    if (extraccionUrl && extraccionUrl[1]) {
-                        elementoImg.src = extraccionUrl[1];
-                    }
-                }
-                
-                actualizarBanderaPodio('equipo-1-bandera', campeonMundial);
-                actualizarBanderaPodio('equipo-2-bandera', subcampeonMundial);
-                actualizarBanderaPodio('equipo-3-bandera', terceroMundial);
-                // 👆 FIN DE LO NUEVO 👆
-
-                const oro = rankingArray[0];
-                const plata = rankingArray[1];
-                const bronce = rankingArray[2];
-
-                if (oro) {
-                    document.getElementById('podium-1-nombre').innerText = mapaNicks[oro.usuario] || oro.usuario.split('@')[0];
-                    document.getElementById('podium-1-avatar').innerText = (mapaAvatares[oro.usuario] || '⚽') + ' 🏆';
-                } else {
-                    document.getElementById('podium-1-nombre').innerText = '';
-                    document.getElementById('podium-1-avatar').innerText = '';
-                }
-                if (plata) {
-                    document.getElementById('podium-2-nombre').innerText = mapaNicks[plata.usuario] || plata.usuario.split('@')[0];
-                    document.getElementById('podium-2-avatar').innerText = mapaAvatares[plata.usuario] || '⚽';
-                } else {
-                    document.getElementById('podium-2-nombre').innerText = '';
-                    document.getElementById('podium-2-avatar').innerText = '';
-                }
-                if (bronce) {
-                    document.getElementById('podium-3-nombre').innerText = mapaNicks[bronce.usuario] || bronce.usuario.split('@')[0];
-                    document.getElementById('podium-3-avatar').innerText = mapaAvatares[bronce.usuario] || '⚽';
-                } else {
-                    document.getElementById('podium-3-nombre').innerText = '';
-                    document.getElementById('podium-3-avatar').innerText = '';
-                }
-            } else {
-                document.getElementById('podium-final').style.display = 'none';
-            }
-
-            // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP) 🔥 ---
-            let htmlJornadas = `
-                <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
-            `;
-            
-            document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
-            
-            document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
-
-            // 6. Dibujar HTML de la lista de posiciones
-            let htmlRanking = '';
-            rankingArray.forEach((user, index) => {
-                const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
-                const nombreCorto = mapaNicks[user.usuario] || user.usuario.split('@')[0]; 
-                const avatarJugador = mapaAvatares[user.usuario] || '⚽'; 
-            
-                let estiloCampeon = '';
-                let corona = '';
-                if (mundialTerminado && index === 0) {
-                    // Le damos margen extra arriba para que la copa no choque con los demás elementos
-                    estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold; margin-top: 15px; margin-bottom: 10px;';
-                    
-                    // Copa posicionada matemáticamente en la esquina superior izquierda con inclinación
-                    corona = '<div style="position: absolute; top: -18px; left: -12px; font-size: 28px; transform: rotate(-15deg); filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.5));">🏆</div>';
-                }
-            
-                htmlRanking += `
-                    <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
-                        ${corona}
-                        <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
-                        <span><b>${user.puntos}</b> pts</span>
-                    </div>
-                `;
-            });
-
-            if (rankingArray.length === 0) {
-                htmlRanking = '<p style="text-align:center; color: gray;">Aún no hay jugadores en esta liga.</p>';
-            }
-
-            document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
         }
+    });
+
+    // 5. MOTOR DE DESEMPATE EN CASCADA
+    let rankingArray = Object.keys(puntajes).map(correo => {
+        return {
+            usuario: correo, // CORREGIDO PARA QUE FUNCIONE EL HTML
+            puntos: puntajes[correo].puntos,
+            exactos: puntajes[correo].exactos,
+            tendencias: puntajes[correo].tendencias,
+            fecha_final: puntajes[correo].fecha_final
+        };
+    });
+
+    // Aplicamos las reglas
+    rankingArray.sort((a, b) => {
+        if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+        if (b.exactos !== a.exactos) return b.exactos - a.exactos;
+        if (b.tendencias !== a.tendencias) return b.tendencias - a.tendencias;
+        
+        const tiempoA = a.fecha_final ? new Date(a.fecha_final).getTime() : Infinity;
+        const tiempoB = b.fecha_final ? new Date(b.fecha_final).getTime() : Infinity;
+        return tiempoA - tiempoB; 
+    });
+
+    // Eliminamos el bloque viejo de "const rankingArray = ..." que rompía el código
+
+    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
+    const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
+
+    if (mundialTerminado && rankingArray.length > 0) {
+        setTimeout(lanzarFuegosArtificiales, 500); 
+    }
+
+    // --- 👑 LÓGICA DEL PODIUM FINAL (SEGURO) 👑 ---
+    if (mundialTerminado && rankingArray.length >= 1) {
+        document.getElementById('podium-final').style.display = 'block';
+        document.getElementById('podium-mundial').style.display = 'block'; 
+
+        let campeonMundial = finalMundial.local;
+        let subcampeonMundial = finalMundial.visita;
+        if (finalMundial.resultado_visita > finalMundial.resultado_local) {
+            campeonMundial = finalMundial.visita;
+            subcampeonMundial = finalMundial.local;
+        }
+
+        let terceroMundial = "Por definir";
+        const partidoTercero = partidos.find(p => p.fase && (p.fase.toUpperCase().includes('TERCER') || p.fase.toUpperCase().includes('3ER')));
+        if (partidoTercero && partidoTercero.resultado_local !== null) {
+            terceroMundial = partidoTercero.resultado_local > partidoTercero.resultado_visita ? partidoTercero.local : partidoTercero.visita;
+        }
+
+        document.getElementById('equipo-1-nombre').innerText = campeonMundial;
+        document.getElementById('equipo-2-nombre').innerText = subcampeonMundial;
+        document.getElementById('equipo-3-nombre').innerText = terceroMundial;
+
+        function actualizarBanderaPodio(idHtml, nombrePais) {
+            const elementoImg = document.getElementById(idHtml);
+            const htmlBandera = obtenerBandera(nombrePais);
+            const extraccionUrl = htmlBandera.match(/src="([^"]+)"/); 
+            if (extraccionUrl && extraccionUrl[1]) {
+                elementoImg.src = extraccionUrl[1];
+            }
+        }
+        
+        actualizarBanderaPodio('equipo-1-bandera', campeonMundial);
+        actualizarBanderaPodio('equipo-2-bandera', subcampeonMundial);
+        actualizarBanderaPodio('equipo-3-bandera', terceroMundial);
+
+        const oro = rankingArray[0];
+        const plata = rankingArray[1];
+        const bronce = rankingArray[2];
+
+        if (oro) {
+            document.getElementById('podium-1-nombre').innerText = mapaNicks[oro.usuario] || oro.usuario.split('@')[0];
+            document.getElementById('podium-1-avatar').innerText = (mapaAvatares[oro.usuario] || '⚽') + ' 🏆';
+        } else {
+            document.getElementById('podium-1-nombre').innerText = '';
+            document.getElementById('podium-1-avatar').innerText = '';
+        }
+        if (plata) {
+            document.getElementById('podium-2-nombre').innerText = mapaNicks[plata.usuario] || plata.usuario.split('@')[0];
+            document.getElementById('podium-2-avatar').innerText = mapaAvatares[plata.usuario] || '⚽';
+        } else {
+            document.getElementById('podium-2-nombre').innerText = '';
+            document.getElementById('podium-2-avatar').innerText = '';
+        }
+        if (bronce) {
+            document.getElementById('podium-3-nombre').innerText = mapaNicks[bronce.usuario] || bronce.usuario.split('@')[0];
+            document.getElementById('podium-3-avatar').innerText = mapaAvatares[bronce.usuario] || '⚽';
+        } else {
+            document.getElementById('podium-3-nombre').innerText = '';
+            document.getElementById('podium-3-avatar').innerText = '';
+        }
+    } else {
+        document.getElementById('podium-final').style.display = 'none';
+    }
+
+    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP) 🔥 ---
+    let htmlJornadas = `
+        <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
+    `;
+    
+    // Eliminada la doble asignación de innerHTML que tenías repetida
+    document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
+
+    // 6. Dibujar HTML de la lista de posiciones
+    let htmlRanking = '';
+    rankingArray.forEach((user, index) => {
+        const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
+        const nombreCorto = mapaNicks[user.usuario] || user.usuario.split('@')[0]; 
+        const avatarJugador = mapaAvatares[user.usuario] || '⚽'; 
+    
+        let estiloCampeon = '';
+        let corona = '';
+        if (mundialTerminado && index === 0) {
+            estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold; margin-top: 15px; margin-bottom: 10px;';
+            corona = '<div style="position: absolute; top: -18px; left: -12px; font-size: 28px; transform: rotate(-15deg); filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.5));">🏆</div>';
+        }
+    
+        htmlRanking += `
+            <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
+                ${corona}
+                <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
+                <span><b>${user.puntos}</b> pts</span>
+            </div>
+        `;
+    });
+
+    if (rankingArray.length === 0) {
+        htmlRanking = '<p style="text-align:center; color: gray;">Aún no hay jugadores en esta liga.</p>';
+    }
+
+    document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
+}
 
         function cerrarRanking() {
             document.getElementById('vista-ranking').style.display = 'none';
