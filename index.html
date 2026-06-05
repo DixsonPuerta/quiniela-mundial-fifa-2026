@@ -644,7 +644,7 @@ async function guardarCampeon() {
                         { nombre: grupoText, password: claveText }
                     ]);
                     if (errorLiga) {
-                        alert('Error al guardar la contraseña de la nueva liga.'); return;
+                        alert('Error en la base de datos: ' + errorLiga.message); return;
                     }
                 }
             }
