@@ -257,6 +257,7 @@
         💾 Guardar Mi Campeón
         </button>
         <p id="msg-campeon" style="margin-top: 15px; font-weight: bold;"></p>
+        
     </div>
 
         <div id="vista-quiniela" class="contenedor">
@@ -1562,6 +1563,12 @@ async function mostrarRanking() {
         function cerrarPalmares() {
             document.getElementById('vista-palmares').style.display = 'none';
             document.getElementById('vista-quiniela').style.display = 'block';
+        }
+        function cerrarVistaCampeon() {
+        // Oculta la pantalla del campeón
+        document.getElementById('vista-campeon').style.display = 'none';
+        // Vuelve a mostrar la pantalla principal de los partidos
+        document.getElementById('vista-quiniela').style.display = 'block';
         }
     </script>
 </body>
