@@ -169,13 +169,21 @@
         
         <div style="background: #f8f9fa; border-left: 4px solid #27ae60; padding: 15px; border-radius: 5px; margin-bottom: 25px; font-size: 14px; color: #333; text-align: left;">
             <h3 style="margin-top: 0; color: #2c3e50;">📜 Reglamento Oficial</h3>
-            <ul style="padding-left: 20px; margin-bottom: 0;">
-                <li style="margin-bottom: 8px;"><b>Puntaje Normal:</b> 5 pts por acertar el marcador exacto, 3 pts por acertar la tendencia (ganador o empate).</li>
-                <li style="margin-bottom: 8px;"><b>Puntaje Fase knockout:</b> Similar a la fase de grupos pero el resultado valido será el final entre los 90 minutos reglamentarios (No se considera el tiempo Extra ni Penales).</li>
-                <li style="margin-bottom: 8px;"><b>Puntaje Gran Final:</b> 10 pts por marcador exacto, 5 pts por tendencia.</li>
-                <li style="margin-bottom: 8px;"><b>Niebla de Guerra (Cierre):</b> Los pronósticos se bloquean 1 hora antes del primer partido de cada jornada.</li>
-                <li><b>Clasificación:</b> El jugador con más puntos al finalizar el torneo será coronado en su Liga Privada.</li>
-            </ul>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+            <li style="margin-bottom: 8px;"><b>Puntaje Normal:</b> 5 pts por acertar el marcador exacto, 3 pts por acertar la tendencia (ganador o empate).</li>
+            <li style="margin-bottom: 8px;"><b>Puntaje Fase knockout:</b> Similar a la fase de grupos pero el resultado valido será el final entre los 90 minutos reglamentarios (No se considera el tiempo Extra ni Penales).</li>
+            <li style="margin-bottom: 8px;"><b>Puntaje Gran Final:</b> 10 pts por marcador exacto, 5 pts por tendencia.</li>
+            <li style="margin-bottom: 8px;"><b>Niebla de Guerra (Cierre):</b> Los pronósticos se bloquean 1 hora antes del primer partido de cada jornada.</li>
+            <li style="margin-bottom: 8px;"><b>Clasificación:</b> El jugador con más puntos al finalizar el torneo será coronado en su Liga Privada.</li>
+            <li style="margin-bottom: 10px;">
+                <b>🏆 Sistema de Desempate en Cascada:</b> Si dos o más usuarios tienen la misma cantidad de puntos, el sistema los ordenará automáticamente evaluando estas reglas en orden:
+            <ul style="margin-top: 8px; margin-bottom: 0; padding-left: 20px; font-size: 0.95em;">
+            <li style="margin-bottom: 5px;"><b>Criterio 1 (Calidad):</b> Mayor cantidad de Marcadores Exactos. Gana quien haya conseguido más "Plenos". Esto premia la precisión absoluta sobre la suerte.</li>
+            <li style="margin-bottom: 5px;"><b>Criterio 2 (Volumen):</b> Mayor cantidad de Tendencias. Si tienen los mismos plenos, gana el que haya acertado más tendencias (ganadores/empates).</li>
+            <li><b>Criterio 3 (Fotofinish):</b> El factor Tiempo. Si están empatados en todo, el sistema acude a la base de datos y revisa la marca de tiempo exacta. ¡Gana el jugador que haya guardado su pronóstico primero! Premia a los que planifican con antelación.</li>
+        </ul>
+            </li>
+        </ul>
         </div>
 
         <button class="btn-google" onclick="loginConGoogle()">
