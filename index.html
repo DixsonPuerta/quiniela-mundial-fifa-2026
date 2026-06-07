@@ -1453,7 +1453,7 @@ async function mostrarRanking() {
             return estadoJornadas;
         }
         // --- 9. NIEBLA DE GUERRA (ESPIONAJE DE RIVALES) ---
-            // Recibimos el parámetro nickRival
+        // Recibimos el parámetro nickRival
         async function verPronosticosDe(correoRival, nickRival) {
             // Ocultar ranking y mostrar la vista del rival
             document.getElementById('vista-ranking').style.display = 'none';
@@ -1465,9 +1465,26 @@ async function mostrarRanking() {
             // Traer todos los partidos y activar el Reloj Maestro
             const { data: partidos } = await clienteSupabase
                 .from('partidos')
-                .select('id, local, visita, jornada, fecha_hora')
+                .select('id, local, visita, jornada, fecha_hora, goles_local, goles_visita')
                 .order('id', { ascending: true });
             
+            // 1. ORDENAR PARTIDOS POR FECHA (Solo Jornadas 1, 2 y 3)
+            partidos.sort((a, b) => {
+                if (a.jornada <= 3 && b.jornada <= 3) {
+                    const formatearFecha = (fh) => {
+                        if (!fh) return "9999";
+                        if (fh.includes('/')) {
+                            let partes = fh.split(' ');
+                            let fecha = partes[0].split('/');
+                            return fecha.length >= 2 ? `${fecha[1]}/${fecha[0]} ${partes[1] || ''}` : fh;
+                        }
+                        return fh;
+                    };
+                    return formatearFecha(a.fecha_hora).localeCompare(formatearFecha(b.fecha_hora));
+                }
+                return a.id - b.id;
+            });
+
             const candados = calcularCandados(partidos);
 
             // Traer los pronósticos específicos de este rival
@@ -1489,6 +1506,7 @@ async function mostrarRanking() {
 
                 let textoLocal = '<span style="color: gray;">-</span>';
                 let textoVisita = '<span style="color: gray;">-</span>';
+                let etiquetaPuntos = ''; // Globo de puntaje
 
                 // Aquí ocurre la Niebla de Guerra
                 if (prediccion) {
@@ -1496,6 +1514,23 @@ async function mostrarRanking() {
                         // Si ya es muy tarde para cambiarlo, se levanta la niebla y vemos el resultado
                         textoLocal = `<b>${prediccion.goles_local}</b>`;
                         textoVisita = `<b>${prediccion.goles_visita}</b>`;
+
+                        // 2. CALCULAR PUNTOS
+                        if (p.goles_local !== null && p.goles_local !== undefined && 
+                            p.goles_visita !== null && p.goles_visita !== undefined) {
+                            
+                            let pts = 0;
+                            if (prediccion.goles_local === p.goles_local && prediccion.goles_visita === p.goles_visita) {
+                                pts = 5;
+                            } else if (Math.sign(prediccion.goles_local - prediccion.goles_visita) === 
+                                     Math.sign(p.goles_local - p.goles_visita)) {
+                                pts = 3;
+                            }
+
+                            let colorFondo = pts === 5 ? '#2ecc71' : (pts === 3 ? '#f39c12' : '#95a5a6');
+                            etiquetaPuntos = `<span style="background: ${colorFondo}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-left: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">+${pts}</span>`;
+                        }
+
                     } else {
                         // Si la jornada sigue abierta, aparece el candado (Niebla de Guerra)
                         textoLocal = '🔒';
@@ -1506,8 +1541,8 @@ async function mostrarRanking() {
                 htmlRival += `
                     <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 14px;">${p.local} vs ${p.visita}</span>
-                        <span style="background: #f8f9fa; padding: 5px 15px; border-radius: 8px; font-size: 18px;">
-                            ${textoLocal} - ${textoVisita}
+                        <span style="background: #f8f9fa; padding: 5px 15px; border-radius: 8px; font-size: 18px; display: flex; align-items: center;">
+                            ${textoLocal} - ${textoVisita} ${etiquetaPuntos}
                         </span>
                     </div>
                 `;
@@ -1530,7 +1565,7 @@ async function mostrarRanking() {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             
             // Mostrar solo la caja seleccionada y pintar su botón
-            document.getElementById(`contenedor-jornada-${idJornada}`).style.display = 'block';
+            document.getElementById('contenedor-jornada-' + idJornada).style.display = 'block';
             botonRend.classList.add('active');
             
             // 👇 Disparar fuegos artificiales si es la Final
