@@ -14,7 +14,7 @@
         .bandera-premium {
             width: 32px;
             height: auto;
-            border-radius: 4px; /* Bordes ligeramente redondeados */
+            border-radius: 4px;
             box-shadow: 0px 3px 6px rgba(0,0,0,0.4);
             vertical-align: middle;
             transition: transform 0.2s;
@@ -67,7 +67,6 @@
             .horarios-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* --- Pega tu código aquí abajo --- */
         .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 16px; }
         .ranking-item:nth-child(1) { background: #fff8e1; font-weight: bold; border-radius: 8px; border: 1px solid #ffe082; } /* Oro */
         .ranking-item:nth-child(2) { background: #f5f5f5; font-weight: bold; border-radius: 8px; border: 1px solid #e0e0e0; } /* Plata */
@@ -157,7 +156,6 @@
         <h1 style="color: #2c3e50; text-align: center; margin-bottom: 5px;">🏆 Quiniela Mundial FIFA 2026</h1>
         <p style="text-align: center; color: gray; margin-bottom: 30px;">Demuestra que eres el verdadero Campeón del Mundo</p>
 
-        <!-- Banderas de los anfitriones (Imágenes universales) -->
         <div style="text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; align-items: center;">
             <img src="https://flagcdn.com/w80/ca.png" alt="Canadá" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
             <img src="https://flagcdn.com/w80/us.png" alt="Estados Unidos" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
@@ -366,7 +364,6 @@
         <button class="btn-logout" onclick="cerrarVistaRival()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver al Ranking</button>
     </div>
 
-    <!-- 🌟 VISTA PALMARÉS (SALÓN DE LA FAMA EXCLUSIVO) 🌟 -->
     <div id="vista-palmares" class="contenedor" style="display: none; max-width: 800px; margin: 20px auto;">
         <style>
             .palmares-header { text-align: center; color: #d35400; margin-bottom: 20px; font-size: 26px; text-transform: uppercase; font-weight: bold; }
@@ -518,23 +515,6 @@ async function guardarCampeon() {
         msgDiv.innerText = `¡Guardado! Vas con ${seleccion} hasta la muerte. 🏆`;
     }
 }
-
-        // Función blindada que devuelve estrictamente una IMAGEN
-        function obtenerBandera(nombrePais) {
-            if (!nombrePais) return '';
-            
-            // Convertimos el texto a minúsculas y quitamos espacios extra
-            const nombreNormalizado = nombrePais.toLowerCase().trim();
-            const codigo = codigosBanderas[nombreNormalizado];
-            
-            if (codigo) {
-                // AQUÍ ESTÁ LA MAGIA: Devuelve la etiqueta <img> real
-                return `<img src="https://flagcdn.com/w40/${codigo}.png" alt="${nombrePais}" class="bandera-premium">`;
-            } else {
-                // Bandera blanca si el equipo no está en el diccionario
-                return `<span style="font-size: 24px;">🏳️</span>`; 
-            }
-        }
 
         // --- GESTIÓN DE PERFILES Y LIGAS ---
 
@@ -1307,8 +1287,6 @@ async function mostrarRanking() {
         return tiempoA - tiempoB; 
     });
 
-    // Eliminamos el bloque viejo de "const rankingArray = ..." que rompía el código
-
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
 
     if (mundialTerminado && rankingArray.length > 0) {
@@ -1384,7 +1362,6 @@ async function mostrarRanking() {
         <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
     `;
     
-    // Eliminada la doble asignación de innerHTML que tenías repetida
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
     // 6. Dibujar HTML de la lista de posiciones
