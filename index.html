@@ -290,7 +290,7 @@
             <p>Cargando datos...</p>
         </div>
         
-        <button class="btn-save" onclick="guardarTodo()">Guardar Cambios</button>
+        <button id="btn-guardar-quiniela" class="btn-save" onclick="guardarTodo()">Guardar Cambios</button>
 
     </div> <div id="vista-ranking" class="contenedor" style="display: none;">
         <h2>🏆 Tabla de Posiciones</h2>
@@ -1119,7 +1119,9 @@ async function guardarCampeon() {
         function toggleModoArbitro() {
             modoArbitro = !modoArbitro;
             const titulo = document.querySelector('#vista-quiniela h2');
-            const btnSave = document.querySelector('.btn-save');
+            
+            // ✅ CORRECCIÓN: Ahora apuntamos directamente al ID del botón correcto
+            const btnSave = document.getElementById('btn-guardar-quiniela'); 
             
             if (modoArbitro) {
                 titulo.innerHTML = '⚖️ PANEL DEL ÁRBITRO (Resultados Reales)';
