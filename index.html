@@ -14,7 +14,7 @@
         .bandera-premium {
             width: 32px;
             height: auto;
-            border-radius: 4px; /* Bordes ligeramente redondeados */
+            border-radius: 4px;
             box-shadow: 0px 3px 6px rgba(0,0,0,0.4);
             vertical-align: middle;
             transition: transform 0.2s;
@@ -67,7 +67,6 @@
             .horarios-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* --- Pega tu código aquí abajo --- */
         .ranking-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; font-size: 16px; }
         .ranking-item:nth-child(1) { background: #fff8e1; font-weight: bold; border-radius: 8px; border: 1px solid #ffe082; } /* Oro */
         .ranking-item:nth-child(2) { background: #f5f5f5; font-weight: bold; border-radius: 8px; border: 1px solid #e0e0e0; } /* Plata */
@@ -157,7 +156,6 @@
         <h1 style="color: #2c3e50; text-align: center; margin-bottom: 5px;">🏆 Quiniela Mundial FIFA 2026</h1>
         <p style="text-align: center; color: gray; margin-bottom: 30px;">Demuestra que eres el verdadero Campeón del Mundo</p>
 
-        <!-- Banderas de los anfitriones (Imágenes universales) -->
         <div style="text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; align-items: center;">
             <img src="https://flagcdn.com/w80/ca.png" alt="Canadá" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
             <img src="https://flagcdn.com/w80/us.png" alt="Estados Unidos" width="35" style="border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
@@ -292,7 +290,7 @@
             <p>Cargando datos...</p>
         </div>
         
-        <button class="btn-save" onclick="guardarTodo()">Guardar Cambios</button>
+        <button id="btn-guardar-quiniela" class="btn-save" onclick="guardarTodo()">Guardar Cambios</button>
 
     </div> <div id="vista-ranking" class="contenedor" style="display: none;">
         <h2>🏆 Tabla de Posiciones</h2>
@@ -366,7 +364,6 @@
         <button class="btn-logout" onclick="cerrarVistaRival()" style="width: 100%; margin-top: 20px; padding: 10px;">Volver al Ranking</button>
     </div>
 
-    <!-- 🌟 VISTA PALMARÉS (SALÓN DE LA FAMA EXCLUSIVO) 🌟 -->
     <div id="vista-palmares" class="contenedor" style="display: none; max-width: 800px; margin: 20px auto;">
         <style>
             .palmares-header { text-align: center; color: #d35400; margin-bottom: 20px; font-size: 26px; text-transform: uppercase; font-weight: bold; }
@@ -518,23 +515,6 @@ async function guardarCampeon() {
         msgDiv.innerText = `¡Guardado! Vas con ${seleccion} hasta la muerte. 🏆`;
     }
 }
-
-        // Función blindada que devuelve estrictamente una IMAGEN
-        function obtenerBandera(nombrePais) {
-            if (!nombrePais) return '';
-            
-            // Convertimos el texto a minúsculas y quitamos espacios extra
-            const nombreNormalizado = nombrePais.toLowerCase().trim();
-            const codigo = codigosBanderas[nombreNormalizado];
-            
-            if (codigo) {
-                // AQUÍ ESTÁ LA MAGIA: Devuelve la etiqueta <img> real
-                return `<img src="https://flagcdn.com/w40/${codigo}.png" alt="${nombrePais}" class="bandera-premium">`;
-            } else {
-                // Bandera blanca si el equipo no está en el diccionario
-                return `<span style="font-size: 24px;">🏳️</span>`; 
-            }
-        }
 
         // --- GESTIÓN DE PERFILES Y LIGAS ---
 
@@ -1139,7 +1119,9 @@ async function guardarCampeon() {
         function toggleModoArbitro() {
             modoArbitro = !modoArbitro;
             const titulo = document.querySelector('#vista-quiniela h2');
-            const btnSave = document.querySelector('.btn-save');
+            
+            // ✅ CORRECCIÓN: Ahora apuntamos directamente al ID del botón correcto
+            const btnSave = document.getElementById('btn-guardar-quiniela'); 
             
             if (modoArbitro) {
                 titulo.innerHTML = '⚖️ PANEL DEL ÁRBITRO (Resultados Reales)';
@@ -1307,8 +1289,6 @@ async function mostrarRanking() {
         return tiempoA - tiempoB; 
     });
 
-    // Eliminamos el bloque viejo de "const rankingArray = ..." que rompía el código
-
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
 
     if (mundialTerminado && rankingArray.length > 0) {
@@ -1384,7 +1364,6 @@ async function mostrarRanking() {
         <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
     `;
     
-    // Eliminada la doble asignación de innerHTML que tenías repetida
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
     // 6. Dibujar HTML de la lista de posiciones
@@ -1453,24 +1432,44 @@ async function mostrarRanking() {
             return estadoJornadas;
         }
         // --- 9. NIEBLA DE GUERRA (ESPIONAJE DE RIVALES) ---
-            // Recibimos el parámetro nickRival
+        // Recibimos el parámetro nickRival
         async function verPronosticosDe(correoRival, nickRival) {
             // Ocultar ranking y mostrar la vista del rival
             document.getElementById('vista-ranking').style.display = 'none';
             document.getElementById('vista-rival').style.display = 'block';
             
-            // Usamos el nickRival directamente en el título (sin el split)
-            document.getElementById('titulo-rival').innerText = `Pronósticos de ${nickRival}`;
+            // Usamos el nickRival directamente en el título
+            document.getElementById('titulo-rival').innerText = 'Pronósticos de ' + nickRival;
 
-            // Traer todos los partidos y activar el Reloj Maestro
+            // ✅ CORRECCIÓN: Pedimos resultado_local y resultado_visita
             const { data: partidos } = await clienteSupabase
                 .from('partidos')
-                .select('id, local, visita, jornada, fecha_hora')
+                .select('id, local, visita, jornada, fecha_hora, resultado_local, resultado_visita')
                 .order('id', { ascending: true });
             
+            // 1. ORDENAR PARTIDOS POR FECHA (Solo Jornadas 1, 2 y 3)
+            if (partidos) {
+                partidos.sort((a, b) => {
+                    if (a.jornada <= 3 && b.jornada <= 3) {
+                        const formatearFecha = (fh) => {
+                            if (!fh) return "9999";
+                            if (fh.includes('/')) {
+                                let partes = fh.split(' ');
+                                let fecha = partes[0].split('/');
+                                return fecha.length >= 2 ? `${fecha[1]}/${fecha[0]} ${partes[1] || ''}` : fh;
+                            }
+                            return fh;
+                        };
+                        return formatearFecha(a.fecha_hora).localeCompare(formatearFecha(b.fecha_hora));
+                    }
+                    return a.id - b.id;
+                });
+            }
+
             const candados = calcularCandados(partidos);
 
             // Traer los pronósticos específicos de este rival
+            // (En esta tabla SÍ se llaman goles_local y goles_visita)
             const { data: pronosticosRival } = await clienteSupabase
                 .from('pronosticos')
                 .select('partido_id, goles_local, goles_visita')
@@ -1483,35 +1482,55 @@ async function mostrarRanking() {
 
             let htmlRival = '';
             
-            partidos.forEach(p => {
-                const prediccion = mapaRival[p.id];
-                const jornadaBloqueada = candados[p.jornada] ? candados[p.jornada].bloqueada : false;
+            if (partidos) {
+                partidos.forEach(p => {
+                    const prediccion = mapaRival[p.id];
+                    const jornadaBloqueada = candados[p.jornada] ? candados[p.jornada].bloqueada : false;
 
-                let textoLocal = '<span style="color: gray;">-</span>';
-                let textoVisita = '<span style="color: gray;">-</span>';
+                    let textoLocal = '<span style="color: gray;">-</span>';
+                    let textoVisita = '<span style="color: gray;">-</span>';
+                    let etiquetaPuntos = ''; // Globo de puntaje
 
-                // Aquí ocurre la Niebla de Guerra
-                if (prediccion) {
-                    if (jornadaBloqueada) {
-                        // Si ya es muy tarde para cambiarlo, se levanta la niebla y vemos el resultado
-                        textoLocal = `<b>${prediccion.goles_local}</b>`;
-                        textoVisita = `<b>${prediccion.goles_visita}</b>`;
-                    } else {
-                        // Si la jornada sigue abierta, aparece el candado (Niebla de Guerra)
-                        textoLocal = '🔒';
-                        textoVisita = '🔒';
+                    // Aquí ocurre la Niebla de Guerra
+                    if (prediccion) {
+                        if (jornadaBloqueada) {
+                            // Si ya es muy tarde para cambiarlo, se levanta la niebla y vemos el resultado
+                            textoLocal = `<b>${prediccion.goles_local}</b>`;
+                            textoVisita = `<b>${prediccion.goles_visita}</b>`;
+
+                            // ✅ CORRECCIÓN 2: CALCULAR PUNTOS usando p.resultado_local y p.resultado_visita
+                            if (p.resultado_local !== null && p.resultado_local !== undefined && 
+                                p.resultado_visita !== null && p.resultado_visita !== undefined) {
+                                
+                                let pts = 0;
+                                if (prediccion.goles_local === p.resultado_local && prediccion.goles_visita === p.resultado_visita) {
+                                    pts = 5;
+                                } else if (Math.sign(prediccion.goles_local - prediccion.goles_visita) === 
+                                         Math.sign(p.resultado_local - p.resultado_visita)) {
+                                    pts = 3;
+                                }
+
+                                let colorFondo = pts === 5 ? '#2ecc71' : (pts === 3 ? '#f39c12' : '#95a5a6');
+                                etiquetaPuntos = `<span style="background: ${colorFondo}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-left: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">+${pts}</span>`;
+                            }
+
+                        } else {
+                            // Si la jornada sigue abierta, aparece el candado (Niebla de Guerra)
+                            textoLocal = '🔒';
+                            textoVisita = '🔒';
+                        }
                     }
-                }
 
-                htmlRival += `
-                    <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 14px;">${p.local} vs ${p.visita}</span>
-                        <span style="background: #f8f9fa; padding: 5px 15px; border-radius: 8px; font-size: 18px;">
-                            ${textoLocal} - ${textoVisita}
-                        </span>
-                    </div>
-                `;
-            });
+                    htmlRival += `
+                        <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px;">${p.local} vs ${p.visita}</span>
+                            <span style="background: #f8f9fa; padding: 5px 15px; border-radius: 8px; font-size: 18px; display: flex; align-items: center;">
+                                ${textoLocal} - ${textoVisita} ${etiquetaPuntos}
+                            </span>
+                        </div>
+                    `;
+                });
+            }
 
             document.getElementById('lista-rival').innerHTML = htmlRival;
         }
@@ -1530,7 +1549,7 @@ async function mostrarRanking() {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             
             // Mostrar solo la caja seleccionada y pintar su botón
-            document.getElementById(`contenedor-jornada-${idJornada}`).style.display = 'block';
+            document.getElementById('contenedor-jornada-' + idJornada).style.display = 'block';
             botonRend.classList.add('active');
             
             // 👇 Disparar fuegos artificiales si es la Final
