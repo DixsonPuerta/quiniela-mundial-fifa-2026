@@ -1408,8 +1408,8 @@ async function mostrarRanking() {
 
             // 1. Encontrar cuál es el PRIMER partido de cada jornada
             partidos.forEach(p => {
-                if (p.jornada && p.fecha_hora) {
-                    const horaPartido = new Date(p.fecha_hora);
+                if (p.jornada && p.fecha_utc) {
+                    const horaPartido = new Date(p.fecha_utc);
 
                     // Si la jornada no existe aún en nuestro diccionario, o si encontramos un partido que se juega más temprano, actualizamos el registro
                     if (!estadoJornadas[p.jornada] || horaPartido < estadoJornadas[p.jornada].primerPartido) {
@@ -1444,8 +1444,7 @@ async function mostrarRanking() {
             // ✅ CORRECCIÓN: Pedimos resultado_local y resultado_visita
             const { data: partidos } = await clienteSupabase
                 .from('partidos')
-                .select('id, local, visita, jornada, fecha_hora, resultado_local, resultado_visita')
-                .order('id', { ascending: true });
+                .select('id, local, visita, jornada, fecha_hora, fecha_utc, resultado_local, resultado_visita')
             
             // 1. ORDENAR PARTIDOS POR FECHA (Solo Jornadas 1, 2 y 3)
             if (partidos) {
