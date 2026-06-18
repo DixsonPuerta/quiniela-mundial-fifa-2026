@@ -1369,11 +1369,11 @@ async function mostrarRanking() {
     const todosLosUsuarios = rankingArray.map(u => u.usuario);
 
     jornadasAEvaluar.forEach(numJornada => {
-        // 1. Filtrar los partidos que pertenecen SOLO a esta jornada
-        const partidosDeEstaJornada = todosLosPartidos.filter(p => Number(p.jornada) === numJornada);
+        // 1. FILTRADO CON VARIABLE REAL: Usamos 'partidos' en lugar de 'todosLosPartidos'
+        const partidosDeEstaJornada = partidos.filter(p => Number(p.jornada) === numJornada);
         
-        // 2. Verificar si TODOS los partidos de esta jornada ya tienen sus goles puestos (no son NULL)
-        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.goles_local !== null && p.goles_visita !== null);
+        // 2. COLUMNAS REALES DE SUPABASE: Validamos con 'resultado_local' y 'resultado_visita'
+        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
 
         if (jornadaFinalizada) {
             let puntajesDeEstaJornada = [];
@@ -1382,8 +1382,8 @@ async function mostrarRanking() {
             todosLosUsuarios.forEach(usuarioEmail => {
                 let puntosGanadosEnFecha = 0;
 
-                // Filtrar los pronósticos que este usuario hizo para los partidos de ESTA jornada
-                const pronosticosUsuario = todosLosPronosticos.filter(pr => 
+                // FILTRADO CON VARIABLE REAL: Usamos 'pronosticos' en lugar de 'todosLosPronosticos'
+                const pronosticosUsuario = pronosticos.filter(pr => 
                     pr.usuario === usuarioEmail && 
                     partidosDeEstaJornada.some(p => p.id === pr.partido_id)
                 );
@@ -1391,9 +1391,27 @@ async function mostrarRanking() {
                 pronosticosUsuario.forEach(pronostico => {
                     const partido = partidosDeEstaJornada.find(p => p.id === pronostico.partido_id);
                     if (partido) {
-                        // 🌟 AQUÍ INVOCAS TU FUNCIÓN ACTUAL QUE CALCULA LOS PUNTOS (+5, +3, etc.)
-                        // Asegúrate de cambiar 'calcularPuntosDeUnPartido' por el nombre real de tu función
-                        puntosGanadosEnFecha += calcularPuntosDeUnPartido(pronostico, partido); 
+                        // Mapeo exacto de los datos del partido real
+                        const pLocal = partido.resultado_local;
+                        const pVisita = partido.resultado_visita;
+                        
+                        // Marcadores que puso el usuario en su plantilla
+                        const prLocal = pronostico.goles_local; 
+                        const prVisita = pronostico.goles_visita;
+
+                        if (prLocal !== null && prVisita !== null) {
+                            // 🌟 FÓRMULA DE PUNTOS INTEGRADA (Evita llamadas a funciones externas)
+                            const aciertoExacto = (pLocal === prLocal && pVisita === prVisita);
+                            const tendenciaReal = Math.sign(pLocal - pVisita);
+                            const tendenciaPronostico = Math.sign(prLocal - prVisita);
+                            const aciertoTendencia = (tendenciaReal === tendenciaPronostico);
+
+                            if (aciertoExacto) {
+                                puntosGanadosEnFecha += 5; // Cambiar por tu puntaje si no usas +5
+                            } else if (aciertoTendencia) {
+                                puntosGanadosEnFecha += 3; // Cambiar por tu puntaje si no usas +3
+                            }
+                        }
                     }
                 });
 
@@ -1405,32 +1423,33 @@ async function mostrarRanking() {
             const maxPuntosDeLaFecha = puntajesDeEstaJornada[0].puntos;
 
             // 5. Filtrar por si acaso hubo un empate en el primer lugar de esta fecha
-            const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
-            
-            const nombresGanadores = ganadoresDeLaFecha.map(u => {
-                return mapaNicks[u.usuario] || u.usuario.split('@')[0];
-            }).join(' y ');
+            if (maxPuntosDeLaFecha > 0) {
+                const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
+                
+                const nombresGanadores = ganadoresDeLaFecha.map(u => {
+                    return mapaNicks[u.usuario] || u.usuario.split('@')[0];
+                }).join(' y ');
 
-            // 6. ¡EL TRUCO MAESTRO!: Usamos "+=" para acumular las tarjetas sin borrar la jornada anterior
-            htmlJornadas += `
-                <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${numJornada}</span><br>
-                    <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> 
-                    <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
-                </div>
-            `;
+                // 6. Acumulación limpia de tarjetas hacia abajo
+                htmlJornadas += `
+                    <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${numJornada}</span><br>
+                        <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> 
+                        <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
+                    </div>
+                `;
+            }
         } else {
-            // 7. Si la jornada no ha terminado, colocamos el mensaje de espera de forma sutil.
-            // Solo mostramos el mensaje de la jornada activa para no llenar la pantalla de textos grises.
+            // 7. Mensaje de espera adaptado
             if (!htmlJornadas.includes("⏳ Esperando")) {
                 htmlJornadas += `
-                    <p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando que ruede el balón para la Jornada ${numJornada}...</p>
+                    <p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la jornada ${numJornada}...</p>
                 `;
             }
         }
     });
 
-    // Inyectamos todo el bloque acumulado en el contenedor de la pantalla
+    // Inyectamos todo el bloque limpio en el contenedor HTML
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
     // 6. Dibujar HTML de la lista de posiciones
