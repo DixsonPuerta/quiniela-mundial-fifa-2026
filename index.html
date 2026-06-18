@@ -1359,11 +1359,78 @@ async function mostrarRanking() {
         document.getElementById('podium-final').style.display = 'none';
     }
 
-    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP) 🔥 ---
-    let htmlJornadas = `
-        <p style="text-align: center; color: gray; font-size: 13px; margin: 10px 0;">⏳ Esperando que ruede el balón para la Jornada 1...</p>
-    `;
+    // --- 🔥 LÓGICA DE GANADORES DE JORNADA ACUMULATIVO (MVP) 🔥 ---
+    let htmlJornadas = '';
     
+    // Definimos el universo de jornadas que queremos auditar en orden
+    const jornadasAEvaluar = [1, 2, 3, 4, 5, 7]; 
+    
+    // Extraemos la lista de todos los participantes únicos del torneo
+    const todosLosUsuarios = rankingArray.map(u => u.usuario);
+
+    jornadasAEvaluar.forEach(numJornada => {
+        // 1. Filtrar los partidos que pertenecen SOLO a esta jornada
+        const partidosDeEstaJornada = todosLosPartidos.filter(p => Number(p.jornada) === numJornada);
+        
+        // 2. Verificar si TODOS los partidos de esta jornada ya tienen sus goles puestos (no son NULL)
+        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.goles_local !== null && p.goles_visita !== null);
+
+        if (jornadaFinalizada) {
+            let puntajesDeEstaJornada = [];
+
+            // 3. Calcular cuántos puntos hizo CADA usuario exclusivamente en esta jornada
+            todosLosUsuarios.forEach(usuarioEmail => {
+                let puntosGanadosEnFecha = 0;
+
+                // Filtrar los pronósticos que este usuario hizo para los partidos de ESTA jornada
+                const pronosticosUsuario = todosLosPronosticos.filter(pr => 
+                    pr.usuario === usuarioEmail && 
+                    partidosDeEstaJornada.some(p => p.id === pr.partido_id)
+                );
+
+                pronosticosUsuario.forEach(pronostico => {
+                    const partido = partidosDeEstaJornada.find(p => p.id === pronostico.partido_id);
+                    if (partido) {
+                        // 🌟 AQUÍ INVOCAS TU FUNCIÓN ACTUAL QUE CALCULA LOS PUNTOS (+5, +3, etc.)
+                        // Asegúrate de cambiar 'calcularPuntosDeUnPartido' por el nombre real de tu función
+                        puntosGanadosEnFecha += calcularPuntosDeUnPartido(pronostico, partido); 
+                    }
+                });
+
+                puntajesDeEstaJornada.push({ usuario: usuarioEmail, puntos: puntosGanadosEnFecha });
+            });
+
+            // 4. Ordenar los puntajes de la jornada de mayor a menor para hallar al MVP de la fecha
+            puntajesDeEstaJornada.sort((a, b) => b.puntos - a.puntos);
+            const maxPuntosDeLaFecha = puntajesDeEstaJornada[0].puntos;
+
+            // 5. Filtrar por si acaso hubo un empate en el primer lugar de esta fecha
+            const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
+            
+            const nombresGanadores = ganadoresDeLaFecha.map(u => {
+                return mapaNicks[u.usuario] || u.usuario.split('@')[0];
+            }).join(' y ');
+
+            // 6. ¡EL TRUCO MAESTRO!: Usamos "+=" para acumular las tarjetas sin borrar la jornada anterior
+            htmlJornadas += `
+                <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${numJornada}</span><br>
+                    <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> 
+                    <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
+                </div>
+            `;
+        } else {
+            // 7. Si la jornada no ha terminado, colocamos el mensaje de espera de forma sutil.
+            // Solo mostramos el mensaje de la jornada activa para no llenar la pantalla de textos grises.
+            if (!htmlJornadas.includes("⏳ Esperando")) {
+                htmlJornadas += `
+                    <p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando que ruede el balón para la Jornada ${numJornada}...</p>
+                `;
+            }
+        }
+    });
+
+    // Inyectamos todo el bloque acumulado en el contenedor de la pantalla
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
     // 6. Dibujar HTML de la lista de posiciones
