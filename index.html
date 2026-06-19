@@ -1358,7 +1358,10 @@ async function mostrarRanking() {
     } else {
         document.getElementById('podium-final').style.display = 'none';
     }
-
+// 🔍 AUDITORÍA SILENCIOSA DE PRODUCCIÓN
+    console.log("=== AUDITORÍA CONTROL MVP ===");
+    console.log("¿La variable 'partidos' tiene datos?:", typeof partidos !== 'undefined' ? partidos : "No existe");
+    console.log("¿Cuántos partidos lee el script?:", typeof partidos !== 'undefined' ? partidos.length : 0);
     // --- 🔥 LÓGICA DE GANADORES DE JORNADA ACUMULATIVO (MVP) 🔥 ---
     let htmlJornadas = '';
     
