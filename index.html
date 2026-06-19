@@ -1358,101 +1358,89 @@ async function mostrarRanking() {
     } else {
         document.getElementById('podium-final').style.display = 'none';
     }
+
 // 🔍 AUDITORÍA SILENCIOSA DE PRODUCCIÓN
     console.log("=== AUDITORÍA CONTROL MVP ===");
     console.log("¿La variable 'partidos' tiene datos?:", typeof partidos !== 'undefined' ? partidos : "No existe");
     console.log("¿Cuántos partidos lee el script?:", typeof partidos !== 'undefined' ? partidos.length : 0);
+
     // --- 🔥 LÓGICA DE GANADORES DE JORNADA ACUMULATIVO (MVP) 🔥 ---
     let htmlJornadas = '';
     
-    // Definimos el universo de jornadas que queremos auditar en orden
+    // Universo de jornadas a evaluar en orden
     const jornadasAEvaluar = [1, 2, 3, 4, 5, 7]; 
     
     // Extraemos la lista de todos los participantes únicos del torneo
     const todosLosUsuarios = rankingArray.map(u => u.usuario);
 
-    jornadasAEvaluar.forEach(numJornada => {
-        // 1. FILTRADO CON VARIABLE REAL: Usamos 'partidos' en lugar de 'todosLosPartidos'
-        const partidosDeEstaJornada = partidos.filter(p => Number(p.jornada) === numJornada);
-        
-        // 2. COLUMNAS REALES DE SUPABASE: Validamos con 'resultado_local' y 'resultado_visita'
-        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
+    // 🌟 CONEXIÓN CORREGIDA: Usamos tu variable real 'clienteSupabase'
+    const { data: partidosCompletos, error: errMvp } = await clienteSupabase.from('partidos').select('*');
+    
+    if (!errMvp && partidosCompletos) {
+        jornadasAEvaluar.forEach(numJornada => {
+            const partidosDeEstaJornada = partidosCompletos.filter(p => Number(p.jornada) === numJornada);
+            const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
 
-        if (jornadaFinalizada) {
-            let puntajesDeEstaJornada = [];
+            if (jornadaFinalizada) {
+                let puntajesDeEstaJornada = [];
 
-            // 3. Calcular cuántos puntos hizo CADA usuario exclusivamente en esta jornada
-            todosLosUsuarios.forEach(usuarioEmail => {
-                let puntosGanadosEnFecha = 0;
+                todosLosUsuarios.forEach(usuarioEmail => {
+                    let puntosGanadosEnFecha = 0;
 
-                // FILTRADO CON VARIABLE REAL: Usamos 'pronosticos' en lugar de 'todosLosPronosticos'
-                const pronosticosUsuario = pronosticos.filter(pr => 
-                    pr.usuario === usuarioEmail && 
-                    partidosDeEstaJornada.some(p => p.id === pr.partido_id)
-                );
+                    const pronosticosUsuario = pronosticos.filter(pr => 
+                        pr.usuario === usuarioEmail && 
+                        partidosDeEstaJornada.some(p => p.id === pr.partido_id)
+                    );
 
-                pronosticosUsuario.forEach(pronostico => {
-                    const partido = partidosDeEstaJornada.find(p => p.id === pronostico.partido_id);
-                    if (partido) {
-                        // Mapeo exacto de los datos del partido real
-                        const pLocal = partido.resultado_local;
-                        const pVisita = partido.resultado_visita;
-                        
-                        // Marcadores que puso el usuario en su plantilla
-                        const prLocal = pronostico.goles_local; 
-                        const prVisita = pronostico.goles_visita;
+                    pronosticosUsuario.forEach(pronostico => {
+                        const partido = partidosDeEstaJornada.find(p => p.id === pronostico.partido_id);
+                        if (partido) {
+                            const pLocal = partido.resultado_local;
+                            const pVisita = partido.resultado_visita;
+                            const prLocal = pronostico.goles_local; 
+                            const prVisita = pronostico.goles_visita;
 
-                        if (prLocal !== null && prVisita !== null) {
-                            // 🌟 FÓRMULA DE PUNTOS INTEGRADA (Evita llamadas a funciones externas)
-                            const aciertoExacto = (pLocal === prLocal && pVisita === prVisita);
-                            const tendenciaReal = Math.sign(pLocal - pVisita);
-                            const tendenciaPronostico = Math.sign(prLocal - prVisita);
-                            const aciertoTendencia = (tendenciaReal === tendenciaPronostico);
+                            if (prLocal !== null && prVisita !== null) {
+                                const aciertoExacto = (pLocal === prLocal && pVisita === prVisita);
+                                const aciertoTendencia = (Math.sign(pLocal - pVisita) === Math.sign(prLocal - prVisita));
 
-                            if (aciertoExacto) {
-                                puntosGanadosEnFecha += 5; // Cambiar por tu puntaje si no usas +5
-                            } else if (aciertoTendencia) {
-                                puntosGanadosEnFecha += 3; // Cambiar por tu puntaje si no usas +3
+                                if (aciertoExacto) {
+                                    puntosGanadosEnFecha += 5; 
+                                } else if (aciertoTendencia) {
+                                    puntosGanadosEnFecha += 3; 
+                                }
                             }
                         }
-                    }
+                    });
+
+                    puntajesDeEstaJornada.push({ usuario: usuarioEmail, puntos: puntosGanadosEnFecha });
                 });
 
-                puntajesDeEstaJornada.push({ usuario: usuarioEmail, puntos: puntosGanadosEnFecha });
-            });
+                puntajesDeEstaJornada.sort((a, b) => b.puntos - a.puntos);
+                const maxPuntosDeLaFecha = puntajesDeEstaJornada.length > 0 ? puntajesDeEstaJornada[0].puntos : 0;
 
-            // 4. Ordenar los puntajes de la jornada de mayor a menor para hallar al MVP de la fecha
-            puntajesDeEstaJornada.sort((a, b) => b.puntos - a.puntos);
-            const maxPuntosDeLaFecha = puntajesDeEstaJornada[0].puntos;
+                if (maxPuntosDeLaFecha > 0) {
+                    const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
+                    const nombresGanadores = ganadoresDeLaFecha.map(u => mapaNicks[u.usuario] || u.usuario.split('@')[0]).join(' y ');
 
-            // 5. Filtrar por si acaso hubo un empate en el primer lugar de esta fecha
-            if (maxPuntosDeLaFecha > 0) {
-                const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
-                
-                const nombresGanadores = ganadoresDeLaFecha.map(u => {
-                    return mapaNicks[u.usuario] || u.usuario.split('@')[0];
-                }).join(' y ');
-
-                // 6. Acumulación limpia de tarjetas hacia abajo
-                htmlJornadas += `
-                    <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                        <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${numJornada}</span><br>
-                        <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> 
-                        <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
-                    </div>
-                `;
+                    htmlJornadas += `
+                        <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                            <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${numJornada}</span><br>
+                            <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> 
+                            <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
+                        </div>
+                    `;
+                }
+            } else {
+                if (!htmlJornadas.includes("⏳ Esperando")) {
+                    htmlJornadas += `
+                        <p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la jornada ${numJornada}...</p>
+                    `;
+                }
             }
-        } else {
-            // 7. Mensaje de espera adaptado
-            if (!htmlJornadas.includes("⏳ Esperando")) {
-                htmlJornadas += `
-                    <p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la jornada ${numJornada}...</p>
-                `;
-            }
-        }
-    });
+        });
+    }
 
-    // Inyectamos todo el bloque limpio en el contenedor HTML
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
     // 6. Dibujar HTML de la lista de posiciones
@@ -1464,7 +1452,7 @@ async function mostrarRanking() {
     
         let estiloCampeon = '';
         let corona = '';
-        if (mundialTerminado && index === 0) {
+        if (typeof mundialTerminado !== 'undefined' && mundialTerminado && index === 0) {
             estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.05); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.4); z-index: 10; position: relative; font-weight: bold; margin-top: 15px; margin-bottom: 10px;';
             corona = '<div style="position: absolute; top: -18px; left: -12px; font-size: 28px; transform: rotate(-15deg); filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.5));">🏆</div>';
         }
@@ -1472,7 +1460,7 @@ async function mostrarRanking() {
         htmlRanking += `
             <div class="ranking-item" style="cursor: pointer; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreCorto}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
                 ${corona}
-                <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
+                <span>${medalla} ${avatarJugador} ${nombreCorto} <span style="font-size: 12px; color: ${typeof mundialTerminado !== 'undefined' && mundialTerminado && index === 0 ? 'white' : 'gray'};">(Ver 👁️)</span></span>
                 <span><b>${user.puntos}</b> pts</span>
             </div>
         `;
@@ -1485,10 +1473,10 @@ async function mostrarRanking() {
     document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
 }
 
-        function cerrarRanking() {
-            document.getElementById('vista-ranking').style.display = 'none';
-            document.getElementById('vista-quiniela').style.display = 'block';
-        }
+function cerrarRanking() {
+    document.getElementById('vista-ranking').style.display = 'none';
+    document.getElementById('vista-quiniela').style.display = 'block';
+}
 
         // --- 8. RELOJ MAESTRO Y CANDADOS POR JORNADA ---
         function calcularCandados(partidos) {
