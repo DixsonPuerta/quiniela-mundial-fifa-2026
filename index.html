@@ -1480,7 +1480,15 @@ async function mostrarRanking() {
     const jornadasFuturas = [4, 5, 6, 7, 8];
     jornadasFuturas.forEach(numJ => {
         const partidosDeEstaJornada = partidos ? partidos.filter(p => Number(p.jornada) === numJ) : [];
-        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
+        
+        // 🎯 CONTROL REGLAMENTARIO: Cantidad de partidos reales requeridos por cada fase
+        const partidosRequeridos = numJ === 4 ? 16 : (numJ === 5 ? 8 : (numJ === 6 ? 4 : 2));
+        
+        // Cuenta cuántos partidos de esta fase ya tienen un resultado real ingresado
+        const partidosConResultado = partidosDeEstaJornada.filter(p => p.resultado_local !== null && p.resultado_visita !== null).length;
+
+        // La jornada SOLO finaliza si se jugaron y cargaron los 16 partidos (o los correspondientes a la fase)
+        const jornadaFinalizada = partidosRequeridos > 0 && partidosConResultado === partidosRequeridos;
 
         if (jornadaFinalizada) {
             let puntajesDeEstaJornada = [];
@@ -1511,7 +1519,7 @@ async function mostrarRanking() {
                         <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
                     </div>`;
             }
-        } else if (partidosDeEstaJornada.length > 0 && !htmlJornadas.includes(`⏳ Esperando fase`)) {
+        } else if (partidosDeEstaJornada.length > 0 && !htmlJornadas.includes(numJ === 4 ? '16avos' : numJ === 5 ? 'Octavos' : numJ === 6 ? 'Cuartos' : numJ === 7 ? 'Semifinal' : 'Final')) {
             const nombreFaseStr = numJ === 4 ? '16avos de Final' : numJ === 5 ? 'Octavos' : numJ === 6 ? 'Cuartos' : numJ === 7 ? 'Semifinal' : 'Final';
             htmlJornadas += `<p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la fase: ${nombreFaseStr}...</p>`;
         }
