@@ -1169,12 +1169,13 @@ async function mostrarRanking() {
     document.getElementById('vista-ranking').style.display = 'block';
     document.getElementById('tabla-posiciones-lista').innerHTML = `<p style="text-align:center; color:gray;">Calculando puntajes para la liga: <b>${miGrupo}</b>...</p>`;
 
-    // 1. Buscamos SOLO a los jugadores de MI liga para extraer perfiles reales
+    // 1. Buscamos SOLO a los jugadores de MI liga
     const { data: companeros } = await clienteSupabase
         .from('perfiles')
         .select('correo, nickname, avatar, campeon_elegido')
         .eq('grupo', miGrupo);
 
+    const correosValidos = companeros ? companeros.map(c => c.correo) : [];
     const mapaNicks = {};
     const mapaAvatares = {}; 
     const mapaCampeonElegido = {};
@@ -1188,100 +1189,194 @@ async function mostrarRanking() {
         });
     }
 
-    // 2. Traemos partidos para el podio final y bandera del campeón
+    // 2. Traemos de Supabase los pronósticos ingresados para las fases finales (Jornada >= 4)
+    let pronosticosNuevos = []; 
+    if (correosValidos.length > 0) {
+        const universoCorreosQuery = [];
+        correosValidos.forEach(c => {
+            universoCorreosQuery.push(c.trim());                 
+            universoCorreosQuery.push(c.trim().toLowerCase());   
+            universoCorreosQuery.push(c.trim().toUpperCase());   
+        });
+        const correosFiltradoFinal = [...new Set(universoCorreosQuery)];
+
+        const { data } = await clienteSupabase
+            .from('pronosticos')
+            .select('usuario, partido_id, goles_local, goles_visita, created_at')
+            .in('usuario', correosFiltradoFinal) 
+            .not('goles_local', 'is', null)     
+            .not('goles_visita', 'is', null)    
+            .order('created_at', { ascending: false })
+            .limit(30000);                      
+
+        if (data) pronosticosNuevos = data;
+    }
+
+    // 3. Traemos de Supabase los partidos oficiales que ya tienen resultado cargado
     const { data: partidos } = await clienteSupabase
         .from('partidos')
         .select('*') 
         .not('resultado_local', 'is', null);
 
-    // 3. MATRIZ MAESTRA MANUAL CONSOLIDADA (J1, J2, J3 + Espacio para J4)
-    // 💡 Dixson: Modifica directamente los números aquí adentro cuando termine cada jornada futura.
-    const tablaMaestraManual = {
+    const resultadosOficiales = {};
+    if (partidos) {
+        partidos.forEach(p => { resultadosOficiales[p.id] = p; });
+    }
+
+    // 4. MATRIZ BASE AUDITADA CON TU EXCEL (J1, J2, J3 Congelados y Seguros)
+    const baseAuditadaGrupales = {
         // === LIGA: THIESS ===
-        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, j4: 0, ex: 7, td: 41 }, // Paz
-        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, j4: 0, ex: 7, td: 40 },           // EternoCampeón
-        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, j4: 0, ex: 9, td: 36 },        // Damian
-        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, j4: 0, ex: 12, td: 30 },               // Pedro
-        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, j4: 0, ex: 7, td: 38 },     // Max
-        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, j4: 0, ex: 8, td: 35 },          // Bele
-        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, j4: 0, ex: 10, td: 31 },         // Thiare
-        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, j4: 0, ex: 8, td: 34 },             // Dixpuerta
-        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, j4: 0, ex: 6, td: 37 },               // RMC
-        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, j4: 0, ex: 4, td: 40 },  // Marcelo
-        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, j4: 0, ex: 6, td: 36 },        // Eli
-        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, j4: 0, ex: 9, td: 31 },                 // Jani
-        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, j4: 0, ex: 7, td: 34 },               // paomarcano
-        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, j4: 0, ex: 6, td: 34 }, // El 10 de la red
-        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, j4: 0, ex: 4, td: 37 },            // LuisF
-        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, j4: 0, ex: 5, td: 35 },            // Coni
-        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, j4: 0, ex: 3, td: 32 },      // RUK
-        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, j4: 0, ex: 3, td: 32 },         // Burbuja
-        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, j4: 0, ex: 5, td: 28 },               // Pame
-        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, j4: 0, ex: 4, td: 23 },           // CLAU
+        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, ex: 7, td: 41 }, // Paz
+        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, ex: 7, td: 40 },           // EternoCampeón
+        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, ex: 9, td: 36 },        // Damian
+        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, ex: 12, td: 30 },               // Pedro
+        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, ex: 7, td: 38 },     // Max
+        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, ex: 8, td: 35 },          // Bele
+        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, ex: 10, td: 31 },         // Thiare
+        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, ex: 8, td: 34 },             // Dixpuerta
+        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, ex: 6, td: 37 },               // RMC
+        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, ex: 4, td: 40 },  // Marcelo
+        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, ex: 6, td: 36 },        // Eli
+        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, ex: 9, td: 31 },                 // Jani
+        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, ex: 7, td: 34 },               // paomarcano
+        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, ex: 6, td: 34 }, // El 10 de la red
+        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, ex: 4, td: 37 },            // LuisF
+        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, ex: 5, td: 35 },            // Coni
+        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, ex: 3, td: 32 },      // RUK
+        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, ex: 3, td: 32 },         // Burbuja
+        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, ex: 5, td: 28 },               // Pame
+        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, ex: 4, td: 23 },           // CLAU
 
         // === LIGA: HERMANOS ADVENTISTAS ===
-        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, j4: 0, ex: 7, td: 39 },               // Alejo
-        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, j4: 0, ex: 8, td: 36 },                // Zizou
-        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, j4: 0, ex: 5, td: 41 },       // Ricciard07
-        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, j4: 0, ex: 6, td: 38 },          // Brayan
-        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, j4: 0, ex: 9, td: 33 },         // Wolfgang 82
-        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, j4: 0, ex: 7, td: 35 },                  // Mr Door
-        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, j4: 0, ex: 6, td: 36 },                 // Vendav
-        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, j4: 0, ex: 4, td: 39 },         // Chacaron
-        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, j4: 0, ex: 6, td: 35 },                  // Tavojbr
-        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, j4: 0, ex: 4, td: 38 },     // RaulRamos7
-        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, j4: 0, ex: 5, td: 33 },            // Sam
-        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, j4: 0, ex: 3, td: 36 },           // Yisus
-        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, j4: 0, ex: 4, td: 34 },               // Randol
-        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, j4: 0, ex: 2, td: 27 },          // Rey👑
+        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, ex: 5, td: 41 },       // Ricciard07
+        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, ex: 7, td: 39 },               // Alejo
+        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, ex: 8, td: 36 },                // Zizou
+        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, ex: 9, td: 33 },         // Wolfgang 82
+        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, ex: 7, td: 35 },                  // Mr Door
+        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, ex: 6, td: 38 },          // Brayan
+        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, ex: 6, td: 35 },                  // Tavojbr
+        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, ex: 6, td: 36 },                 // Vendav
+        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, ex: 4, td: 39 },         // Chacaron
+        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, ex: 4, td: 38 },     // RaulRamos7
+        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, ex: 5, td: 33 },            // Sam
+        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, ex: 4, td: 34 },               // Randol
+        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, ex: 3, td: 36 },           // Yisus
+        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, ex: 2, td: 27 },          // Rey👑
 
         // === LIGA: ARIJAJO ===
-        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, j4: 0, ex: 5, td: 38 },         // Lemage
-        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, j4: 0, ex: 6, td: 33 }, // Alehalamadrid
-        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, j4: 0, ex: 4, td: 35 },               // Ari
-        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, j4: 0, ex: 2, td: 31 }           // Jani10
+        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, ex: 5, td: 38 },         // Lemage
+        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, ex: 6, td: 33 }, // Alehalamadrid
+        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, ex: 4, td: 35 },               // Ari
+        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, ex: 2, td: 31 }           // Jani10
     };
 
-    // --- DETECTAR AL CAMPEÓN REAL PARA BONO ---
+    const puntajes = {};
+    if (companeros) {
+        companeros.forEach(c => {
+            const lowMail = c.correo.toLowerCase().trim();
+            const base = baseAuditadaGrupales[lowMail] || { j1: 0, j2: 0, j3: 0, ex: 0, td: 0 };
+            
+            puntajes[lowMail] = { 
+                correoOriginal: c.correo,
+                j1: base.j1,
+                j2: base.j2,
+                j3: base.j3,
+                eliminacionDirecta: 0,
+                exactos: base.ex,
+                tendencias: base.td,
+                fecha_final: null
+            };
+        });
+    }
+
+    // 5. ESCÁNER AUTOMÁTICO EN TIEMPO REAL DESDE SUPABASE (Para Jornada >= 4)
+    const vistosNuevos = new Set();
+    pronosticosNuevos.forEach(p => {
+        const oficial = resultadosOficiales[p.partido_id];
+        const userKey = p.usuario.toLowerCase().trim();
+        const claveUnica = `${userKey}_${p.partido_id}`;
+
+        if (oficial && Number(oficial.jornada) >= 4 && !vistosNuevos.has(claveUnica) && puntajes[userKey]) {
+            vistosNuevos.add(claveUnica);
+
+            const pLocal = Number(oficial.resultado_local);
+            const pVisita = Number(oficial.resultado_visita);
+            const prLocal = Number(p.goles_local);
+            const prVisita = Number(p.goles_visita);
+
+            const esFinal = oficial.fase && oficial.fase.toUpperCase() === 'FINAL';
+            const premioExacto = esFinal ? 10 : 5;
+            const premioTendencia = esFinal ? 5 : 3;
+
+            const aciertoExacto = (pLocal === prLocal && pVisita === prVisita);
+            const aciertoTendencia = (Math.sign(pLocal - pVisita) === Math.sign(prLocal - prVisita));
+
+            if (aciertoExacto) {
+                puntajes[userKey].eliminacionDirecta += premioExacto;
+                puntajes[userKey].exactos += 1;
+            } else if (aciertoTendencia) {
+                puntajes[userKey].eliminacionDirecta += premioTendencia;
+                puntajes[userKey].tendencias += 1;
+            }
+
+            if (esFinal) {
+                puntajes[userKey].fecha_final = p.created_at;
+            }
+        }
+    });
+
+    // --- DETECTAR AL CAMPEÓN REAL PARA EL BONO FINAL ---
     const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
     let campeonMundialDefinitivo = null;
     if (finalMundial && finalMundial.resultado_local !== null) {
         campeonMundialDefinitivo = finalMundial.resultado_local > finalMundial.resultado_visita ? finalMundial.local : finalMundial.visita;
     }
 
-    // 4. PROCESAMIENTO ESTÁTICO DE FILAS
-    let rankingArray = [];
-    if (companeros) {
-        companeros.forEach(c => {
-            const correo_l = c.correo.toLowerCase().trim();
-            const datos = tablaMaestraManual[correo_l] || { j1: 0, j2: 0, j3: 0, j4: 0, ex: 0, td: 0 };
-            
-            let bonoCampeon = 0;
-            const campeonElegidoJugador = mapaCampeonElegido[correo_l];
-            if (campeonMundialDefinitivo && campeonElegidoJugador && campeonElegidoJugador === campeonMundialDefinitivo) {
-                bonoCampeon = 10; 
-            }
+    // 6. CONSOLIDACIÓN DEL ARREGLO DE POSICIONES
+    let rankingArray = Object.keys(puntajes).map(correo => {
+        let bonoCampeon = 0;
+        const campeonElegidoJugador = mapaCampeonElegido[correo];
+        
+        if (campeonMundialDefinitivo && campeonElegidoJugador && campeonElegidoJugador === campeonMundialDefinitivo) {
+            bonoCampeon = 10; 
+        }
 
-            // Sumatoria matemática lineal corregida
-            const sumaPuntos = datos.j1 + datos.j2 + datos.j3 + datos.j4 + bonoCampeon;
+        const datos = puntajes[correo];
+        const sumaTotal = datos.j1 + datos.j2 + datos.j3 + datos.eliminacionDirecta + bonoCampeon;
 
-            rankingArray.push({
-                usuario: c.correo, 
-                correo_l: correo_l,
-                j1: datos.j1,
-                j2: datos.j2,
-                j3: datos.j3,
-                j4: datos.j4,
-                puntos: sumaPuntos, // 🔥 CORREGIDO: Enlaza perfectamente con la sumatoria lineal
-                exactos: datos.ex,
-                tendencias: datos.td,
-                fecha_final: null
-            });
-        });
-    }
+        return {
+            usuario: datos.correoOriginal, 
+            correo_l: correo,
+            j1: datos.j1,
+            j2: datos.j2,
+            j3: datos.j3,
+            eliminacion: datos.eliminacionDirecta,
+            puntos: sumaTotal, 
+            exactos: datos.exactos,
+            tendencias: datos.tendencias,
+            fecha_final: datos.fecha_final
+        };
+    });
 
-    // Ordenamos el ranking con las directrices asignadas
-    rankingArray.sort((a, b) => b.puntos - a.puntos || b.exactos - a.exactos || b.tendencias - a.tendencias);
+    // 🔥 CONFIGURACIÓN DE DESEMPATE OFICIAL EN CASCADA REGLAMENTARIO 🔥
+    rankingArray.sort((a, b) => {
+        // Criterio principal: Mayor cantidad de puntos totales
+        if (b.puntos !== a.puntos) {
+            return b.puntos - a.puntos;
+        }
+        // Criterio 1 (Calidad): Mayor cantidad de Marcadores Exactos (Plenos)
+        if (b.exactos !== a.exactos) {
+            return b.exactos - a.exactos;
+        }
+        // Criterio 2 (Volumen): Mayor cantidad de Tendencias acertadas
+        if (b.tendencias !== a.tendencias) {
+            return b.tendencias - a.tendencias;
+        }
+        // Criterio 3 (Fotofinish): El factor Tiempo (El que guardó primero gana)
+        const tiempoA = a.fecha_final ? new Date(a.fecha_final).getTime() : Infinity;
+        const tiempoB = b.fecha_final ? new Date(b.fecha_final).getTime() : Infinity;
+        return tiempoA - tiempoB; 
+    });
 
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
     if (mundialTerminado && rankingArray.length > 0) { setTimeout(lanzarFuegosArtificiales, 500); }
@@ -1335,7 +1430,7 @@ async function mostrarRanking() {
         document.getElementById('podium-final').style.display = 'none';
     }
 
-    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP FIJADO POR AUDITORÍA) 🔥 ---
+    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP FIJADO POR AUDITORÍA GRUPAL + DINÁMICO ADELANTE) 🔥 ---
     let htmlJornadas = '';
     if (miGrupo === 'THIESS') {
         htmlJornadas = `
@@ -1381,10 +1476,49 @@ async function mostrarRanking() {
             </div>`;
     }
 
-    htmlJornadas += `<p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando que concluyan los partidos de las fases finales (J4 en adelante)...</p>`;
+    // Procesa automáticamente los ganadores de fase para las jornadas futuras (J4 a J8)
+    const jornadasFuturas = [4, 5, 6, 7, 8];
+    jornadasFuturas.forEach(numJ => {
+        const partidosDeEstaJornada = partidos ? partidos.filter(p => Number(p.jornada) === numJ) : [];
+        const jornadaFinalizada = partidosDeEstaJornada.length > 0 && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
+
+        if (jornadaFinalizada) {
+            let puntajesDeEstaJornada = [];
+            rankingArray.forEach(u => {
+                let puntosGanadosEnFecha = 0;
+                const pronosticosUsuario = pronosticosNuevos.filter(pr => pr.usuario.toLowerCase().trim() === u.correo_l && partidosDeEstaJornada.some(p => p.id === pr.partido_id));
+
+                pronosticosUsuario.forEach(pronostico => {
+                    const partido = partidosDeEstaJornada.find(p => p.id === pronostico.partido_id);
+                    if (partido && pronostico.goles_local !== null && pronostico.goles_visita !== null) {
+                        if (Number(partido.resultado_local) === Number(pronostico.goles_local) && Number(partido.resultado_visita) === Number(pronostico.goles_visita)) { puntosGanadosEnFecha += 5; }
+                        else if (Math.sign(Number(partido.resultado_local) - Number(partido.resultado_visita)) === Math.sign(Number(pronostico.goles_local) - Number(pronostico.goles_visita))) { puntosGanadosEnFecha += 3; }
+                    }
+                });
+                puntajesDeEstaJornada.push({ nickname: mapaNicks[u.correo_l] || u.usuario.split('@')[0], puntos: puntosGanadosEnFecha });
+            });
+
+            puntajesDeEstaJornada.sort((a, b) => b.puntos - a.puntos);
+            const maxPuntosDeLaFecha = puntajesDeEstaJornada.length > 0 ? puntajesDeEstaJornada[0].puntos : 0;
+            if (maxPuntosDeLaFecha > 0) {
+                const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
+                const nombresGanadores = ganadoresDeLaFecha.map(u => u.nickname).join(' y ');
+                let nombreFaseText = numJ === 4 ? '16avos de Final' : numJ === 5 ? 'Octavos' : numJ === 6 ? 'Cuartos' : numJ === 7 ? 'Semifinal' : 'Final';
+                
+                htmlJornadas += `
+                    <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                        <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${nombreFaseText}</span><br>
+                        <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
+                    </div>`;
+            }
+        } else if (partidosDeEstaJornada.length > 0 && !htmlJornadas.includes(`⏳ Esperando fase`)) {
+            const nombreFaseStr = numJ === 4 ? '16avos de Final' : numJ === 5 ? 'Octavos' : numJ === 6 ? 'Cuartos' : numJ === 7 ? 'Semifinal' : 'Final';
+            htmlJornadas += `<p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la fase: ${nombreFaseStr}...</p>`;
+        }
+    });
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
-    // 5. RENDERIZADO VISUAL CON EL FORMATO DESGLOSADO EXCLUSIVO
+    // 7. RENDERIZADO VISUAL CON EL DESGLOSE DETALLADO POR TARJETAS
     let htmlRanking = '';
     rankingArray.forEach((user, index) => {
         const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
@@ -1397,7 +1531,7 @@ async function mostrarRanking() {
             corona = '<div style="position: absolute; top: -16px; left: -10px; font-size: 24px;">🏆</div>';
         }
     
-        let desgloseFuturo = user.j4 > 0 ? ' | <b>J4:</b> ' + user.j4 : '';
+        let detalleEliminacion = user.eliminacion > 0 ? ' | <b>F.El:</b> ' + user.eliminacion : '';
     
         htmlRanking += `
             <div class="ranking-item" style="cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; padding: 12px; margin-bottom: 8px; border-bottom: 1px solid #eee; position: relative; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreShort}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
@@ -1407,7 +1541,7 @@ async function mostrarRanking() {
                     <span style="font-size: 16px;"><b style="color: #2c3e50;">${user.puntos}</b> <span style="font-size: 12px; color: gray; font-weight: normal;">pts</span></span>
                 </div>
                 <div style="font-size: 11px; color: #7f8c8d; margin-top: 5px; width: 100%; display: flex; justify-content: space-between; font-family: sans-serif;">
-                    <span><b>J1:</b> ${user.j1} | <b>J2:</b> ${user.j2} | <b>J3:</b> ${user.j3}${desgloseFuturo}</span>
+                    <span><b>J1:</b> ${user.j1} | <b>J2:</b> ${user.j2} | <b>J3:</b> ${user.j3}${detalleEliminacion}</span>
                     <span>🎯 Plenos: ${user.exactos}  •  📈 Tend: ${user.tendencias}</span>
                 </div>
             </div>`;
@@ -1417,6 +1551,7 @@ async function mostrarRanking() {
     document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
 }
 
+        // Conservamos la función de cierre para la navegación nativa
 function cerrarRanking() {
     document.getElementById('vista-ranking').style.display = 'none';
     document.getElementById('vista-quiniela').style.display = 'block';
