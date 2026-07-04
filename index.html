@@ -1196,7 +1196,7 @@ async function mostrarRanking() {
         .from('partidos')
         .select('*');
 
-    // 3. Traemos los pronósticos dinámicos de los compañeros de liga
+    // 3. 🎯 TRAEMOS PRONÓSTICOS ORDENADOS: Se reincorpora el orden descendente para leer siempre el cambio más reciente
     let pronosticosFasesFinales = []; 
     if (correosValidos.length > 0) {
         const universoCorreosQuery = [];
@@ -1211,7 +1211,9 @@ async function mostrarRanking() {
             .select('usuario, partido_id, goles_local, goles_visita, created_at')
             .in('usuario', correosFiltradoFinal) 
             .not('goles_local', 'is', null)     
-            .not('goles_visita', 'is', null);
+            .not('goles_visita', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(30000);
         if (data) pronosticosFasesFinales = data;
     }
 
@@ -1290,20 +1292,19 @@ async function mostrarRanking() {
     }
 
     // 6. MOTOR DINÁMICO EN VIVO (Calcula estrictamente desde la Jornada 5 en adelante)
-    const registrosProcesados = new Set();
+    const vistosNuevos = new Set();
     pronosticosFasesFinales.forEach(p => {
         const oficial = resultadosOficiales[p.partido_id];
         const userKey = p.usuario.toLowerCase().trim();
         const claveUnica = `${userKey}_${p.partido_id}`;
 
-        if (oficial && !registrosProcesados.has(claveUnica) && puntajesEvolutivos[userKey]) {
+        if (oficial && !vistosNuevos.has(claveUnica) && puntajesEvolutivos[userKey]) {
             const numJornada = Number(oficial.jornada);
 
-            // 🌟 BLOQUEO DE DUPLICACIÓN: J1, J2, J3 y J4 ya están estáticas en la matriz manual.
-            // El escáner dinámico en vivo empieza a contar exclusivamente desde la J5 (Octavos).
+            // Bloqueo de pasado: las jornadas de la 1 a la 4 ya están congeladas arriba
             if (numJornada < 5) return;
 
-            registrosProcesados.add(claveUnica);
+            vistosNuevos.add(claveUnica);
 
             const pLocal = Number(oficial.resultado_local);
             const pVisita = Number(oficial.resultado_visita);
@@ -1513,7 +1514,7 @@ async function mostrarRanking() {
     });
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
-    // 8. RENDERIZADO VISUAL EN SECUENCIA PURA (J1 a J8 Coherente)
+    // 8. RENDERIZADO VISUAL EN SECUENCIA PURA CON J5 VISIBLE DIRECTAMENTE
     let htmlRanking = '';
     rankingArray.forEach((user, index) => {
         const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
@@ -1526,7 +1527,7 @@ async function mostrarRanking() {
             corona = '<div style="position: absolute; top: -16px; left: -10px; font-size: 24px;">🏆</div>';
         }
     
-        // Las fases posteriores se acoplan automáticamente a la tarjeta en cuanto sumen puntos
+        // Las fases posteriores (J6, J7, J8) se acoplan solas en cuanto sumen puntos
         let desgloseFasesFinales = '';
         if (user.j6 > 0) desgloseFasesFinales += ` | <b>J6:</b> ${user.j6}`;
         if (user.j7 > 0) desgloseFasesFinales += ` | <b>J7:</b> ${user.j7}`;
@@ -1548,8 +1549,7 @@ async function mostrarRanking() {
 
     if (rankingArray.length === 0) { htmlRanking = '<p style="text-align:center; color: gray;">Aún no hay jugadores en esta liga.</p>'; }
     document.getElementById('tabla-posiciones-lista').innerHTML = htmlRanking;
-} 
-
+}
         // Conservamos la función de cierre para la navegación nativa
 function cerrarRanking() {
     document.getElementById('vista-ranking').style.display = 'none';
