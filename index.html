@@ -1175,11 +1175,10 @@ async function mostrarRanking() {
         .select('correo, nickname, avatar, campeon_elegido')
         .eq('grupo', miGrupo);
 
-    const correosValidos = companeros ? companeros.map(c => c.correo) : [];
     const mapaNicks = {};
     const mapaAvatares = {}; 
     const mapaCampeonElegido = {};
-    const mapaCorreosOriginales = {}; // Respeta el casing original de la BD para la función Espiar ('Ver 👁️')
+    const mapaCorreosOriginales = {}; 
 
     if (companeros) {
         companeros.forEach(c => {
@@ -1191,191 +1190,117 @@ async function mostrarRanking() {
         });
     }
 
-    // 2. Traemos TODOS los partidos para controlar el cierre real de jornadas futuras
+    // 2. Traemos partidos de Supabase para renderizar los nombres, banderas del podio superior y leer la columna manual
     const { data: partidos } = await clienteSupabase
         .from('partidos')
         .select('*');
 
-    // 3. 🎯 TRAEMOS PRONÓSTICOS ORDENADOS: Se reincorpora el orden descendente para leer siempre el cambio más reciente
-    let pronosticosFasesFinales = []; 
-    if (correosValidos.length > 0) {
-        const universoCorreosQuery = [];
-        correosValidos.forEach(c => {
-            universoCorreosQuery.push(c.trim());                 
-            universoCorreosQuery.push(c.trim().toLowerCase());   
-            universoCorreosQuery.push(c.trim().toUpperCase());   
-        });
-        const correosFiltradoFinal = [...new Set(universoCorreosQuery)];
-        const { data } = await clienteSupabase
-            .from('pronosticos')
-            .select('usuario, partido_id, goles_local, goles_visita, created_at')
-            .in('usuario', correosFiltradoFinal) 
-            .not('goles_local', 'is', null)     
-            .not('goles_visita', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(30000);
-        if (data) pronosticosFasesFinales = data;
-    }
-
-    // Mapeamos los marcadores oficiales de partidos ya jugados
-    const resultadosOficiales = {};
-    if (partidos) {
-        partidos.forEach(p => { 
-            if (p.resultado_local !== null && p.resultado_local !== undefined) {
-                resultadosOficiales[p.id] = p; 
-            }
-        });
-    }
-
-    // 4. MATRIZ MAESTRA MANUAL CONSOLIDADA (Fase de Grupos + 16avos Congelados y Oficiales)
+    // 3. MATRIZ MAESTRA MANUAL CONGELADA (Fase de Grupos a Semifinales + 3er Lugar)
+    // 💡 Dixson: Modifica aquí 'j8' (+5 o +10) al terminar la gran final.
+    // 💡 Si quieres que sume al desempate, aumenta en 1 el valor de 'ex' (Pleno) o 'td' (Tendencia).
     const tablaMaestraManual = {
         // === LIGA: THIESS ===
-        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, j4: 45, ex: 13, td: 43 },     
-        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, j4: 39, ex: 12, td: 44 },        
-        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, j4: 31, ex: 9, td: 48 }, 
-        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, j4: 33, ex: 10, td: 46 },           
-        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, j4: 37, ex: 14, td: 39 },               
-        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, j4: 42, ex: 14, td: 39 },          
-        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, j4: 31, ex: 12, td: 38 },         
-        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, j4: 42, ex: 11, td: 43 },             
-        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, j4: 42, ex: 12, td: 41 },               
-        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, j4: 37, ex: 14, td: 35 },                 
-        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, j4: 37, ex: 9, td: 43 },                
-        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, j4: 31, ex: 6, td: 47 },  
-        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, j4: 39, ex: 8, td: 43 },            
-        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, j4: 29, ex: 7, td: 44 },        
-        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, j4: 34, ex: 8, td: 42 }, 
-        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, j4: 30, ex: 4, td: 47 },            
-        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, j4: 35, ex: 4, td: 42 },      
-        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, j4: 27, ex: 8, td: 32 },               
-        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, j4: 24, ex: 3, td: 40 },         
-        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, j4: 34, ex: 6, td: 31 },           
+        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, j4: 39, j5: 18, j6: 13, j7: 0, j8: 0, ex: 14, td: 51 },        
+        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, j4: 45, j5: 15, j6: 8, j7: 3, j8: 0, ex: 14, td: 50 },     
+        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, j4: 31, j5: 15, j6: 6, j7: 5, j8: 3, ex: 10, td: 56 }, 
+        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, j4: 42, j5: 12, j6: 10, j7: 5, j8: 3, ex: 14, td: 48 },             
+        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, j4: 42, j5: 12, j6: 11, j7: 0, j8: 0, ex: 15, td: 45 },          
+        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, j4: 37, j5: 18, j6: 13, j7: 3, j8: 0, ex: 16, td: 43 },                 
+        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, j4: 42, j5: 9, j6: 11, j7: 3, j8: 0, ex: 13, td: 47 },               
+        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, j4: 37, j5: 18, j6: 0, j7: 0, j8: 0, ex: 14, td: 45 },               
+        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, j4: 33, j5: 12, j6: 3, j7: 0, j8: 0, ex: 10, td: 51 },           
+        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, j4: 31, j5: 20, j6: 6, j7: 0, j8: 0, ex: 7, td: 54 },  
+        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, j4: 31, j5: 12, j6: 8, j7: 0, j8: 0, ex: 12, td: 43 },         
+        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, j4: 37, j5: 12, j6: 8, j7: 0, j8: 0, ex: 10, td: 48 },                
+        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, j4: 29, j5: 12, j6: 6, j7: 5, j8: 0, ex: 8, td: 50 },        
+        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, j4: 39, j5: 6, j6: 8, j7: 0, j8: 3, ex: 9, td: 47 },            
+        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, j4: 34, j5: 12, j6: 3, j7: 0, j8: 0, ex: 8, td: 47 }, 
+        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, j4: 30, j5: 12, j6: 3, j7: 0, j8: 0, ex: 4, td: 52 },            
+        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, j4: 27, j5: 19, j6: 8, j7: 0, j8: 0, ex: 11, td: 36 },               
+        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, j4: 24, j5: 9, j6: 8, j7: 5, j8: 0, ex: 5, td: 44 },         
+        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, j4: 35, j5: 6, j6: 0, j7: 0, j8: 0, ex: 4, td: 44 },      
+        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, j4: 34, j5: 9, j6: 3, j7: 5, j8: 0, ex: 7, td: 35 },           
 
         // === LIGA: HERMANOS ADVENTISTAS ===
-        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, j4: 39, ex: 10, td: 47 },               
-        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, j4: 38, ex: 9, td: 47 },       
-        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, j4: 39, ex: 12, td: 41 },         
-        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, j4: 35, ex: 9, td: 46 },                
-        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, j4: 38, ex: 10, td: 44 },          
-        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, j4: 42, ex: 10, td: 44 },                  
-        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, j4: 38, ex: 10, td: 41 },                  
-        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, j4: 29, ex: 10, td: 39 },                 
-        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, j4: 29, ex: 5, td: 47 },         
-        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, j4: 30, ex: 4, td: 48 },     
-        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, j4: 31, ex: 5, td: 43 },           
-        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, j4: 28, ex: 7, td: 39 },            
-        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, j4: 28, ex: 6, td: 40 },               
-        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, j4: 0, ex: 2, td: 27 },           
+        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, j4: 39, j5: 12, j6: 11, j7: 0, j8: 0, ex: 11, td: 53 },               
+        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, j4: 38, j5: 15, j6: 11, j7: 0, j8: 0, ex: 10, td: 54 },       
+        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, j4: 42, j5: 12, j6: 10, j7: 5, j8: 0, ex: 13, td: 48 },                  
+        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, j4: 35, j5: 9, j6: 6, j7: 5, j8: 3, ex: 10, td: 52 },                
+        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, j4: 39, j5: 6, j6: 8, j7: 8, j8: 0, ex: 14, td: 45 },         
+        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, j4: 38, j5: 12, j6: 8, j7: 0, j8: 0, ex: 11, td: 49 },          
+        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, j4: 38, j5: 17, j6: 6, j7: 0, j8: 3, ex: 11, td: 48 },                  
+        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, j4: 29, j5: 19, j6: 8, j7: 0, j8: 3, ex: 13, td: 44 },                 
+        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, j4: 29, j5: 12, j6: 11, j7: 0, j8: 0, ex: 6, td: 53 },         
+        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, j4: 28, j5: 23, j6: 11, j7: 0, j8: 0, ex: 9, td: 47 },            
+        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, j4: 30, j5: 12, j6: 8, j7: 0, j8: 0, ex: 5, td: 53 },     
+        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, j4: 31, j5: 9, j6: 6, j7: 0, j8: 0, ex: 5, td: 48 },           
+        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, j4: 28, j5: 0, j6: 6, j7: 3, j8: 0, ex: 6, td: 43 },               
+        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 2, td: 27 },           
 
         // === LIGA: ARIJAJO ===
-        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, j4: 0, ex: 5, td: 38 },         
-        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, j4: 0, ex: 6, td: 33 }, 
-        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, j4: 0, ex: 4, td: 35 },               
-        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, j4: 0, ex: 2, td: 31 }           
+        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 5, td: 38 },         
+        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 6, td: 33 }, 
+        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 4, td: 35 },               
+        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 2, td: 31 }           
     };
 
-    // 5. Inicializamos los contenedores de datos para el cálculo en memoria
-    const puntajesEvolutivos = {};
+    // 4. 🧠 DETECTAR AL CAMPEÓN REAL DESDE LA COLUMNA MANUAL DE SUPABASE PARA EL BONO
+    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
+    let campeonMundialDefinitivo = null;
+
+    if (finalMundial) {
+        if (finalMundial.campeon_definitivo) {
+            campeonMundialDefinitivo = finalMundial.campeon_definitivo.trim();
+        } else if (finalMundial.resultado_local !== null && finalMundial.resultado_visita !== null) {
+            const rL = Number(finalMundial.resultado_local);
+            const rV = Number(finalMundial.resultado_visita);
+            if (rL !== rV) {
+                campeonMundialDefinitivo = rL > rV ? finalMundial.local : finalMundial.visita;
+            }
+        }
+    }
+
+    // 5. PROCESAMIENTO MATEMÁTICO LINEAL (Suma estricta controlada por ti)
+    let rankingArray = [];
     if (companeros) {
         companeros.forEach(c => {
-            const lowMail = c.correo.toLowerCase().trim();
-            const base = tablaMaestraManual[lowMail] || { j1: 0, j2: 0, j3: 0, j4: 0, ex: 0, td: 0 };
+            const correo_l = c.correo.toLowerCase().trim();
+            const d = tablaMaestraManual[correo_l] || { j1: 0, j2: 0, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 0, td: 0 };
             
-            puntajesEvolutivos[lowMail] = {
-                j1: base.j1, j2: base.j2, j3: base.j3, j4: base.j4,
-                j5: 0, j6: 0, j7: 0, j8: 0,
-                exactos: base.ex,
-                tendencias: base.td,
-                fecha_final: null
-            };
+            // Verificamos si este jugador se ganó los 10 puntos del Bono Campeón de Supabase
+            let puntosDelBono = 0;
+            const campeonElegidoJugador = mapaCampeonElegido[correo_l];
+            if (campeonMundialDefinitivo && campeonElegidoJugador && campeonElegidoJugador.toLowerCase().trim() === campeonMundialDefinitivo.toLowerCase()) {
+                puntosDelBono = 10;
+            }
+
+            const sumaTotal = d.j1 + d.j2 + d.j3 + d.j4 + d.j5 + d.j6 + d.j7 + d.j8 + puntosDelBono;
+
+            rankingArray.push({
+                usuario: mapaCorreosOriginales[correo_l] || c.correo, 
+                correo_l: correo_l,
+                j1: d.j1, j2: d.j2, j3: d.j3, j4: d.j4, j5: d.j5, j6: d.j6, j7: d.j7, j8: d.j8,
+                bono: puntosDelBono,
+                puntos: sumaTotal, 
+                exactos: d.ex,
+                tendencias: d.td
+            });
         });
     }
 
-    // 6. MOTOR DINÁMICO EN VIVO (Calcula estrictamente desde la Jornada 5 en adelante)
-    const vistosNuevos = new Set();
-    pronosticosFasesFinales.forEach(p => {
-        const oficial = resultadosOficiales[p.partido_id];
-        const userKey = p.usuario.toLowerCase().trim();
-        const claveUnica = `${userKey}_${p.partido_id}`;
-
-        if (oficial && !vistosNuevos.has(claveUnica) && puntajesEvolutivos[userKey]) {
-            const numJornada = Number(oficial.jornada);
-
-            // Bloqueo de pasado: las jornadas de la 1 a la 4 ya están congeladas arriba
-            if (numJornada < 5) return;
-
-            vistosNuevos.add(claveUnica);
-
-            const pLocal = Number(oficial.resultado_local);
-            const pVisita = Number(oficial.resultado_visita);
-            const prLocal = Number(p.goles_local);
-            const prVisita = Number(p.goles_visita);
-
-            // Regla reglamentaria: J8 (Final) otorga 10/5 pts, fases intermedias (J5-J7) otorgan 5/3 pts
-            const esFinalReal = oficial.fase && oficial.fase.toUpperCase() === 'FINAL';
-            const premioExacto = esFinalReal ? 10 : 5;
-            const premioTendencia = esFinalReal ? 5 : 3;
-
-            const aciertoExacto = (pLocal === prLocal && pVisita === prVisita);
-            const aciertoTendencia = (Math.sign(pLocal - pVisita) === Math.sign(prLocal - prVisita));
-
-            if (aciertoExacto) {
-                puntajesEvolutivos[userKey][`j${numJornada}`] += premioExacto;
-                puntajesEvolutivos[userKey].exactos += 1;
-            } else if (aciertoTendencia) {
-                puntajesEvolutivos[userKey][`j${numJornada}`] += premioTendencia;
-                puntajesEvolutivos[userKey].tendencias += 1;
-            }
-
-            if (esFinalReal) {
-                puntajesEvolutivos[userKey].fecha_final = p.created_at;
-            }
-        }
-    });
-
-    // --- DETECTAR AL CAMPEÓN REAL PARA EL BONO DE 10 PTS ---
-    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
-    let campeonMundialDefinitivo = null;
-    if (finalMundial && finalMundial.resultado_local !== null) {
-        campeonMundialDefinitivo = finalMundial.resultado_local > finalMundial.resultado_visita ? finalMundial.local : finalMundial.visita;
-    }
-
-    // 7. COMPILACIÓN Y SUMA DE LA TABLA GENERAL (J1 a J8)
-    let rankingArray = Object.keys(puntajesEvolutivos).map(correo => {
-        let bonoCampeon = 0;
-        const campeonElegidoJugador = mapaCampeonElegido[correo];
-        if (campeonMundialDefinitivo && campeonElegidoJugador && campeonElegidoJugador === campeonMundialDefinitivo) {
-            bonoCampeon = 10; 
-        }
-
-        const d = puntajesEvolutivos[correo];
-        const totalCalculado = d.j1 + d.j2 + d.j3 + d.j4 + d.j5 + d.j6 + d.j7 + d.j8 + bonoCampeon;
-
-        return {
-            usuario: mapaCorreosOriginales[correo], 
-            correo_l: correo,
-            j1: d.j1, j2: d.j2, j3: d.j3, j4: d.j4, j5: d.j5, j6: d.j6, j7: d.j7, j8: d.j8,
-            puntos: totalCalculado, 
-            exactos: d.exactos,
-            tendencias: d.tendencias,
-            fecha_final: d.fecha_final
-        };
-    });
-
+    // Ordenamiento por el reglamento oficial de desempates en cascada
     rankingArray.sort((a, b) => b.puntos - a.puntos || b.exactos - a.exactos || b.tendencias - a.tendencias);
 
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
     if (mundialTerminado && rankingArray.length > 0) { setTimeout(lanzarFuegosArtificiales, 500); }
 
-    // --- 👑 LÓGICA DEL PODIUM FINAL 👑 ---
+    // --- 👑 LÓGICA DEL PODIUM FINAL (Sincronizado con la columna manual) 👑 ---
     if (mundialTerminado && rankingArray.length >= 1) {
         document.getElementById('podium-final').style.display = 'block';
         document.getElementById('podium-mundial').style.display = 'block'; 
 
-        let campeonMundial = finalMundial.local; let subcampeonMundial = finalMundial.visita;
-        if (finalMundial.resultado_visita > finalMundial.resultado_local) {
-            campeonMundial = finalMundial.visita; subcampeonMundial = finalMundial.local;
-        }
+        let campeonMundial = finalMundial.campeon_definitivo || (Number(finalMundial.resultado_local) > Number(finalMundial.resultado_visita) ? finalMundial.local : finalMundial.visita);
+        let subcampeonMundial = (campeonMundial === finalMundial.local) ? finalMundial.visita : finalMundial.local;
 
         let terceroMundial = "Por definir";
         const partidoTercero = partidos.find(p => p.fase && (p.fase.toUpperCase().includes('TERCER') || p.fase.toUpperCase().includes('3ER')));
@@ -1416,7 +1341,7 @@ async function mostrarRanking() {
         document.getElementById('podium-final').style.display = 'none';
     }
 
-    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP) 🔥 ---
+    // --- 🔥 LÓGICA DE GANADORES DE JORNADA (MVP FIJADO HASTA SEMIFINALES) 🔥 ---
     let htmlJornadas = '';
     if (miGrupo === 'THIESS') {
         htmlJornadas = `
@@ -1433,8 +1358,20 @@ async function mostrarRanking() {
                 <span style="font-size: 15px;">👑 <b>Paz</b></span> <span style="color: #27ae60; font-weight: bold;">(+62 pts)</span>
             </div>
             <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR 16AVOS DE FINAL</span><br>
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR 16AVOS DE FINAL (J4)</span><br>
                 <span style="font-size: 15px;">👑 <b>Max</b></span> <span style="color: #27ae60; font-weight: bold;">(+45 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR OCTAVOS DE FINAL (J5)</span><br>
+                <span style="font-size: 15px;">👑 <b>Marcelo</b></span> <span style="color: #27ae60; font-weight: bold;">(+20 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR CUARTOS DE FINAL (J6)</span><br>
+                <span style="font-size: 15px;">👑 <b>Damian y Jani</b></span> <span style="color: #27ae60; font-weight: bold;">(+13 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR SEMIFINAL (J7)</span><br>
+                <span style="font-size: 15px;">👑 <b>Paz, Dixpuerta, Eli, Burbuja y CLAU</b></span> <span style="color: #27ae60; font-weight: bold;">(+5 pts)</span>
             </div>`;
     } else if (miGrupo === 'HERMANOS ADVENTISTAS') {
         htmlJornadas = `
@@ -1451,8 +1388,20 @@ async function mostrarRanking() {
                 <span style="font-size: 15px;">👑 <b>Alejo</b></span> <span style="color: #27ae60; font-weight: bold;">(+56 pts)</span>
             </div>
             <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR 16AVOS DE FINAL</span><br>
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR 16AVOS DE FINAL (J4)</span><br>
                 <span style="font-size: 15px;">👑 <b>Mr Door</b></span> <span style="color: #27ae60; font-weight: bold;">(+42 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR OCTAVOS DE FINAL (J5)</span><br>
+                <span style="font-size: 15px;">👑 <b>Sam</b></span> <span style="color: #27ae60; font-weight: bold;">(+23 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR CUARTOS DE FINAL (J6)</span><br>
+                <span style="font-size: 15px;">👑 <b>Alejo, Ricciard07, Chacaron y Sam</b></span> <span style="color: #27ae60; font-weight: bold;">(+11 pts)</span>
+            </div>
+            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR SEMIFINAL (J7)</span><br>
+                <span style="font-size: 15px;">👑 <b>Wolfgang 82</b></span> <span style="color: #27ae60; font-weight: bold;">(+8 pts)</span>
             </div>`;
     } else if (miGrupo === 'ARIJAJO') {
         htmlJornadas = `
@@ -1470,51 +1419,33 @@ async function mostrarRanking() {
             </div>`;
     }
 
-    // Escáner dinámico para calcular los MVP de las rondas eliminatorias restantes (Octavos a Final)
-    let yaMostroEspera = false;
-    const fasesFinalesList = [5, 6, 7, 8];
-    fasesFinalesList.forEach(numJ => {
-        const partidosDeEstaJornada = partidos ? partidos.filter(p => Number(p.jornada) === numJ) : [];
-        
-        let partidosRequeridos = 0;
-        if (numJ === 5) partidosRequeridos = 8;  // Octavos
-        if (numJ === 6) partidosRequeridos = 4;  // Cuartos
-        if (numJ === 7) partidosRequeridos = 2;  // Semifinales
-        if (numJ === 8) partidosRequeridos = 2;  // Final y 3er lugar
-
-        const jornadaFinalizada = partidosDeEstaJornada.length === partidosRequeridos && partidosDeEstaJornada.every(p => p.resultado_local !== null && p.resultado_visita !== null);
-
-        if (jornadaFinalizada) {
-            let puntajesDeEstaJornada = [];
-            rankingArray.forEach(u => {
-                const itemEval = puntajesEvolutivos[u.correo_l];
-                const puntosGanadosEnFecha = itemEval ? itemEval[`j${numJ}`] : 0;
-                puntajesDeEstaJornada.push({ nickname: mapaNicks[u.correo_l] || u.usuario.split('@')[0], puntos: puntosGanadosEnFecha });
-            });
-
-            puntajesDeEstaJornada.sort((a, b) => b.puntos - a.puntos);
-            const maxPuntosDeLaFecha = puntajesDeEstaJornada.length > 0 ? puntajesDeEstaJornada[0].puntos : 0;
-            
-            if (maxPuntosDeLaFecha > 0) {
-                const ganadoresDeLaFecha = puntajesDeEstaJornada.filter(u => u.puntos === maxPuntosDeLaFecha);
-                const nombresGanadores = ganadoresDeLaFecha.map(u => u.nickname).join(' y ');
-                let nombreFaseText = numJ === 5 ? 'Octavos de Final' : numJ === 6 ? 'Cuartos de Final' : numJ === 7 ? 'Semifinal' : 'Gran Final';
-                
-                htmlJornadas += `
-                    <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                        <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA ${nombreFaseText}</span><br>
-                        <span style="font-size: 15px;">👑 <b>${nombresGanadores}</b></span> <span style="color: #27ae60; font-weight: bold;">(+${maxPuntosDeLaFecha} pts)</span>
-                    </div>`;
+    // 💡 LÓGICA AUTOMÁTICA PARA EL MVP DE LA GRAN FINAL:
+    // Al finalizar, evaluará quién hizo la puntuación más alta en la celda 'j8' de tu código
+    if (mundialTerminado) {
+        let maxFinalPts = -1;
+        let ganadoresFinal = [];
+        rankingArray.forEach(u => {
+            if (u.j8 > maxFinalPts) {
+                maxFinalPts = u.j8;
+                ganadoresFinal = [mapaNicks[u.correo_l] || u.usuario.split('@')[0]];
+            } else if (u.j8 === maxFinalPts) {
+                ganadoresFinal.push(mapaNicks[u.correo_l] || u.usuario.split('@')[0]);
             }
-        } else if (!yaMostroEspera && partidosDeEstaJornada.length > 0) {
-            yaMostroEspera = true;
-            const nombreFaseStr = numJ === 5 ? 'Octavos de Final' : numJ === 6 ? 'Cuartos de Final' : numJ === 7 ? 'Semifinal' : 'Gran Final';
-            htmlJornadas += `<p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando fin de la fase: ${nombreFaseStr}...</p>`;
+        });
+        
+        if (maxFinalPts > 0) {
+            htmlJornadas += `
+                <div style="text-align: center; background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; border-radius: 8px; padding: 10px; margin: 8px 0;">
+                    <span style="font-size: 11px; color: #27ae60; font-weight: bold; text-transform: uppercase;">🏆 GANADOR DE LA GRAN FINAL (J8)</span><br>
+                    <span style="font-size: 15px;">👑 <b>${ganadoresFinal.join(' y ')}</b></span> <span style="color: #27ae60; font-weight: bold;">(+${maxFinalPts} pts)</span>
+                </div>`;
         }
-    });
+    } else {
+        htmlJornadas += `<p style="text-align: center; color: gray; font-size: 13px; margin: 15px 0;">⏳ Esperando el pitazo final del partido por el campeonato...</p>`;
+    }
     document.getElementById('lista-ganadores-jornada').innerHTML = htmlJornadas;
 
-    // 8. RENDERIZADO VISUAL EN SECUENCIA PURA CON J5 VISIBLE DIRECTAMENTE
+    // 6. RENDERIZADO VISUAL EN SECUENCIA PURA CONTROLADO POR MATRIZ
     let htmlRanking = '';
     rankingArray.forEach((user, index) => {
         const medalla = user.puntos === 0 ? '<span style="color:gray;">➖</span>' : (index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<b>${index + 1}.</b>`);
@@ -1526,12 +1457,9 @@ async function mostrarRanking() {
             estiloCampeon = 'background: linear-gradient(45deg, #ffd700, #f39c12); color: white; transform: scale(1.02); border: 2px solid #d35400; box-shadow: 0 10px 20px rgba(243,156,18,0.3); z-index: 10; position: relative; font-weight: bold;';
             corona = '<div style="position: absolute; top: -16px; left: -10px; font-size: 24px;">🏆</div>';
         }
-    
-        // Las fases posteriores (J6, J7, J8) se acoplan solas en cuanto sumen puntos
-        let desgloseFasesFinales = '';
-        if (user.j6 > 0) desgloseFasesFinales += ` | <b>J6:</b> ${user.j6}`;
-        if (user.j7 > 0) desgloseFasesFinales += ` | <b>J7:</b> ${user.j7}`;
-        if (user.j8 > 0) desgloseFasesFinales += ` | <b>J8:</b> ${user.j8}`;
+        
+        // Indicador dorado discreto si el usuario se adjudicó el Bono Campeón
+        let textoBono = user.bono > 0 ? ` | <b style="color:#f1c40f;">🌟 Bono:</b> +10` : '';
     
         htmlRanking += `
             <div class="ranking-item" style="cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; padding: 12px; margin-bottom: 8px; border-bottom: 1px solid #eee; position: relative; transition: 0.2s; ${estiloCampeon}" onclick="verPronosticosDe('${user.usuario}', '${nombreShort}')" onmouseover="this.style.backgroundColor='#f0f8ff'" onmouseout="this.style.backgroundColor=''">
@@ -1541,7 +1469,7 @@ async function mostrarRanking() {
                     <span style="font-size: 16px;"><b style="color: #2c3e50;">${user.puntos}</b> <span style="font-size: 12px; color: gray; font-weight: normal;">pts</span></span>
                 </div>
                 <div style="font-size: 11px; color: #7f8c8d; margin-top: 5px; width: 100%; display: flex; justify-content: space-between; font-family: sans-serif;">
-                    <span><b>J1:</b> ${user.j1} | <b>J2:</b> ${user.j2} | <b>J3:</b> ${user.j3} | <b>J4:</b> ${user.j4} | <b>J5:</b> ${user.j5}${desgloseFasesFinales}</span>
+                    <span><b>J1:</b> ${user.j1} | <b>J2:</b> ${user.j2} | <b>J3:</b> ${user.j3} | <b>J4:</b> ${user.j4} | <b>J5:</b> ${user.j5} | <b>J6:</b> ${user.j6} | <b>J7:</b> ${user.j7} | <b>J8:</b> ${user.j8}${textoBono}</span>
                     <span>🎯 Plenos: ${user.exactos}  •  📈 Tend: ${user.tendencias}</span>
                 </div>
             </div>`;
