@@ -1177,7 +1177,6 @@ async function mostrarRanking() {
 
     const mapaNicks = {};
     const mapaAvatares = {}; 
-    const mapaCampeonElegido = {};
     const mapaCorreosOriginales = {}; 
 
     if (companeros) {
@@ -1185,102 +1184,79 @@ async function mostrarRanking() {
             const emailKey = c.correo.toLowerCase().trim();
             mapaNicks[emailKey] = c.nickname;
             mapaAvatares[emailKey] = c.avatar || '⚽'; 
-            mapaCampeonElegido[emailKey] = c.campeon_elegido || null;
             mapaCorreosOriginales[emailKey] = c.correo;
         });
     }
 
-    // 2. Traemos partidos de Supabase para renderizar los nombres, banderas del podio superior y leer la columna manual
+    // 2. Traemos partidos de Supabase SOLO para renderizar los nombres y banderas del podio de países arriba
     const { data: partidos } = await clienteSupabase
         .from('partidos')
         .select('*');
 
-    // 3. MATRIZ MAESTRA MANUAL CONGELADA (Fase de Grupos a Semifinales + 3er Lugar)
-    // 💡 Dixson: Modifica aquí 'j8' (+5 o +10) al terminar la gran final.
+    // 3. MATRIZ MAESTRA 100% MANUAL CONGELADA (Fase de Grupos a Semifinales)
+    // 💡 Dixson: Modifica aquí 'j8' (+5 o +10) y 'bono' (+10) manualmente al terminar la final.
     // 💡 Si quieres que sume al desempate, aumenta en 1 el valor de 'ex' (Pleno) o 'td' (Tendencia).
     const tablaMaestraManual = {
         // === LIGA: THIESS ===
-        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, j4: 39, j5: 18, j6: 13, j7: 0, j8: 0, ex: 14, td: 51 },        
-        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, j4: 45, j5: 15, j6: 8, j7: 3, j8: 0, ex: 14, td: 50 },     
-        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, j4: 31, j5: 15, j6: 6, j7: 5, j8: 3, ex: 10, td: 56 }, 
-        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, j4: 42, j5: 12, j6: 10, j7: 5, j8: 3, ex: 14, td: 48 },             
-        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, j4: 42, j5: 12, j6: 11, j7: 0, j8: 0, ex: 15, td: 45 },          
-        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, j4: 37, j5: 18, j6: 13, j7: 3, j8: 0, ex: 16, td: 43 },                 
-        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, j4: 42, j5: 9, j6: 11, j7: 3, j8: 0, ex: 13, td: 47 },               
-        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, j4: 37, j5: 18, j6: 0, j7: 0, j8: 0, ex: 14, td: 45 },               
-        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, j4: 33, j5: 12, j6: 3, j7: 0, j8: 0, ex: 10, td: 51 },           
-        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, j4: 31, j5: 20, j6: 6, j7: 0, j8: 0, ex: 7, td: 54 },  
-        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, j4: 31, j5: 12, j6: 8, j7: 0, j8: 0, ex: 12, td: 43 },         
-        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, j4: 37, j5: 12, j6: 8, j7: 0, j8: 0, ex: 10, td: 48 },                
-        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, j4: 29, j5: 12, j6: 6, j7: 5, j8: 0, ex: 8, td: 50 },        
-        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, j4: 39, j5: 6, j6: 8, j7: 0, j8: 3, ex: 9, td: 47 },            
-        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, j4: 34, j5: 12, j6: 3, j7: 0, j8: 0, ex: 8, td: 47 }, 
-        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, j4: 30, j5: 12, j6: 3, j7: 0, j8: 0, ex: 4, td: 52 },            
-        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, j4: 27, j5: 19, j6: 8, j7: 0, j8: 0, ex: 11, td: 36 },               
-        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, j4: 24, j5: 9, j6: 8, j7: 5, j8: 0, ex: 5, td: 44 },         
-        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, j4: 35, j5: 6, j6: 0, j7: 0, j8: 0, ex: 4, td: 44 },      
-        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, j4: 34, j5: 9, j6: 3, j7: 5, j8: 0, ex: 7, td: 35 },           
+        "damian.angel.2001@gmail.com": { j1: 42, j2: 56, j3: 55, j4: 39, j5: 18, j6: 13, j7: 0, j8: 0, bono: 0, ex: 14, td: 51 },        
+        "maximiliano.vasquez.c@gmail.com": { j1: 56, j2: 45, j3: 48, j4: 45, j5: 15, j6: 8, j7: 3, j8: 0, bono: 0, ex: 14, td: 50 },     
+        "mariapaz.troncoso.ortega@gmail.com": { j1: 40, j2: 56, j3: 62, j4: 31, j5: 15, j6: 6, j7: 5, j8: 3, bono: 0, ex: 10, td: 56 }, 
+        "dixpuer_18@hotmail.com": { j1: 37, j2: 49, j3: 56, j4: 42, j5: 12, j6: 10, j7: 5, j8: 3, bono: 0, ex: 14, td: 48 },             
+        "belen.jara.arias@gmail.com": { j1: 37, j2: 57, j3: 51, j4: 42, j5: 12, j6: 11, j7: 0, j8: 0, bono: 0, ex: 15, td: 45 },          
+        "janirz10@gmail.com": { j1: 29, j2: 58, j3: 51, j4: 37, j5: 18, j6: 13, j7: 3, j8: 0, bono: 0, ex: 16, td: 43 },                 
+        "rmackennac@gmail.com": { j1: 39, j2: 51, j3: 51, j4: 42, j5: 9, j6: 11, j7: 3, j8: 0, bono: 0, ex: 13, td: 47 },               
+        "pbustos79@gmail.com": { j1: 45, j2: 61, j3: 44, j4: 37, j5: 18, j6: 0, j7: 0, j8: 0, bono: 0, ex: 14, td: 45 },               
+        "dgonzalezerazo@gmail.com": { j1: 46, j2: 57, j3: 52, j4: 33, j5: 12, j6: 3, j7: 0, j8: 0, bono: 0, ex: 10, td: 51 },           
+        "marceloandrespereztapia@gmail.com": { j1: 43, j2: 58, j3: 39, j4: 31, j5: 20, j6: 6, j7: 0, j8: 0, bono: 0, ex: 7, td: 54 },  
+        "thiaregallegos20@gmail.com": { j1: 50, j2: 49, j3: 44, j4: 31, j5: 12, j6: 8, j7: 0, j8: 0, bono: 0, ex: 12, td: 43 },         
+        "paomarcano@gmail.com": { j1: 41, j2: 51, j3: 45, j4: 37, j5: 12, j6: 8, j7: 0, j8: 0, bono: 0, ex: 10, td: 48 },                
+        "elizabeth.torres.p@gmail.com": { j1: 48, j2: 54, j3: 36, j4: 29, j5: 12, j6: 6, j7: 5, j8: 0, bono: 0, ex: 8, td: 50 },        
+        "coni.vasquez.s@gmail.com": { j1: 33, j2: 49, j3: 48, j4: 39, j5: 6, j6: 8, j7: 0, j8: 3, bono: 0, ex: 9, td: 47 },            
+        "rita.velasquez.hormazabal@gmail.com": { j1: 41, j2: 49, j3: 42, j4: 34, j5: 12, j6: 3, j7: 0, j8: 0, bono: 0, ex: 8, td: 47 }, 
+        "luis.espinoza.s@usach.cl": { j1: 35, j2: 53, j3: 43, j4: 30, j5: 12, j6: 3, j7: 0, j8: 0, bono: 0, ex: 4, td: 52 },            
+        "ppojomovsky@gmail.com": { j1: 32, j2: 42, j3: 35, j4: 27, j5: 19, j6: 8, j7: 0, j8: 0, bono: 0, ex: 11, td: 36 },               
+        "albertorrecilla59@gmail.com": { j1: 33, j2: 43, j3: 35, j4: 24, j5: 9, j6: 8, j7: 5, j8: 0, bono: 0, ex: 5, td: 44 },         
+        "ignaciorivasfigueroa@gmail.com": { j1: 29, j2: 49, j3: 33, j4: 35, j5: 6, j6: 0, j7: 0, j8: 0, bono: 0, ex: 4, td: 44 },      
+        "cbritoarancibia@gmail.com": { j1: 31, j2: 29, j3: 29, j4: 34, j5: 9, j6: 3, j7: 5, j8: 0, bono: 0, ex: 7, td: 35 },           
 
         // === LIGA: HERMANOS ADVENTISTAS ===
-        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, j4: 39, j5: 12, j6: 11, j7: 0, j8: 0, ex: 11, td: 53 },               
-        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, j4: 38, j5: 15, j6: 11, j7: 0, j8: 0, ex: 10, td: 54 },       
-        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, j4: 42, j5: 12, j6: 10, j7: 5, j8: 0, ex: 13, td: 48 },                  
-        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, j4: 35, j5: 9, j6: 6, j7: 5, j8: 3, ex: 10, td: 52 },                
-        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, j4: 39, j5: 6, j6: 8, j7: 8, j8: 0, ex: 14, td: 45 },         
-        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, j4: 38, j5: 12, j6: 8, j7: 0, j8: 0, ex: 11, td: 49 },          
-        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, j4: 38, j5: 17, j6: 6, j7: 0, j8: 3, ex: 11, td: 48 },                  
-        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, j4: 29, j5: 19, j6: 8, j7: 0, j8: 3, ex: 13, td: 44 },                 
-        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, j4: 29, j5: 12, j6: 11, j7: 0, j8: 0, ex: 6, td: 53 },         
-        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, j4: 28, j5: 23, j6: 11, j7: 0, j8: 0, ex: 9, td: 47 },            
-        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, j4: 30, j5: 12, j6: 8, j7: 0, j8: 0, ex: 5, td: 53 },     
-        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, j4: 31, j5: 9, j6: 6, j7: 0, j8: 0, ex: 5, td: 48 },           
-        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, j4: 28, j5: 0, j6: 6, j7: 3, j8: 0, ex: 6, td: 43 },               
-        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 2, td: 27 },           
+        "aortiz7180@gmail.com": { j1: 45, j2: 51, j3: 56, j4: 39, j5: 12, j6: 11, j7: 0, j8: 0, bono: 0, ex: 11, td: 53 },               
+        "ricardojavier.ca77@gmail.com": { j1: 45, j2: 48, j3: 55, j4: 38, j5: 15, j6: 11, j7: 0, j8: 0, bono: 0, ex: 10, td: 54 },       
+        "dixpuer@gmail.com": { j1: 39, j2: 49, j3: 52, j4: 42, j5: 12, j6: 10, j7: 5, j8: 0, bono: 0, ex: 13, td: 48 },                  
+        "josmaljsm@gmail.com": { j1: 46, j2: 53, j3: 49, j4: 35, j5: 9, j6: 6, j7: 5, j8: 3, bono: 0, ex: 10, td: 52 },                
+        "wolfgang.pantoja@gmail.com": { j1: 51, j2: 50, j3: 43, j4: 39, j5: 6, j6: 8, j7: 8, j8: 0, bono: 0, ex: 14, td: 45 },         
+        "brayanpedrazac11@gmail.com": { j1: 37, j2: 58, j3: 49, j4: 38, j5: 12, j6: 8, j7: 0, j8: 0, bono: 0, ex: 11, td: 49 },          
+        "tavojbr@gmail.com": { j1: 32, j2: 57, j3: 46, j4: 38, j5: 17, j6: 6, j7: 0, j8: 3, bono: 0, ex: 11, td: 48 },                  
+        "vendav87@gmail.com": { j1: 42, j2: 47, j3: 49, j4: 29, j5: 19, j6: 8, j7: 0, j8: 3, bono: 0, ex: 13, td: 44 },                 
+        "didavideduardo79@gmail.com": { j1: 41, j2: 47, j3: 49, j4: 29, j5: 12, j6: 11, j7: 0, j8: 0, bono: 0, ex: 6, td: 53 },         
+        "lmservicesspa@gmail.com": { j1: 35, j2: 44, j3: 45, j4: 28, j5: 23, j6: 11, j7: 0, j8: 0, bono: 0, ex: 9, td: 47 },            
+        "prraulalejandroramos@gmail.com": { j1: 37, j2: 53, j3: 44, j4: 30, j5: 12, j6: 8, j7: 0, j8: 0, bono: 0, ex: 5, td: 53 },     
+        "jesus.diaz.2020@gmail.com": { j1: 40, j2: 44, j3: 39, j4: 31, j5: 9, j6: 6, j7: 0, j8: 0, bono: 0, ex: 5, td: 48 },           
+        "randolperez@gmail.com": { j1: 43, j2: 41, j3: 38, j4: 28, j5: 0, j6: 6, j7: 3, j8: 0, bono: 0, ex: 6, td: 43 },               
+        "mervishidalgo.20@gmail.com": { j1: 38, j2: 53, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 2, td: 27 },           
 
         // === LIGA: ARIJAJO ===
-        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 5, td: 38 },         
-        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 6, td: 33 }, 
-        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 4, td: 35 },               
-        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 2, td: 31 }           
+        "jorgepalacios008@gmail.com": { j1: 36, j2: 47, j3: 56, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 5, td: 38 },         
+        "alejandro.amundarian.2a.2026@gmail.com": { j1: 36, j2: 46, j3: 47, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 6, td: 33 }, 
+        "ari11rojas@gmail.com": { j1: 37, j2: 47, j3: 41, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 4, td: 35 },               
+        "oriananunez2109@gmail.com": { j1: 24, j2: 35, j3: 44, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 2, td: 31 }           
     };
 
-    // 4. 🧠 DETECTAR AL CAMPEÓN REAL DESDE LA COLUMNA MANUAL DE SUPABASE PARA EL BONO
-    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
-    let campeonMundialDefinitivo = null;
-
-    if (finalMundial) {
-        if (finalMundial.campeon_definitivo) {
-            campeonMundialDefinitivo = finalMundial.campeon_definitivo.trim();
-        } else if (finalMundial.resultado_local !== null && finalMundial.resultado_visita !== null) {
-            const rL = Number(finalMundial.resultado_local);
-            const rV = Number(finalMundial.resultado_visita);
-            if (rL !== rV) {
-                campeonMundialDefinitivo = rL > rV ? finalMundial.local : finalMundial.visita;
-            }
-        }
-    }
-
-    // 5. PROCESAMIENTO MATEMÁTICO LINEAL (Suma estricta controlada por ti)
+    // 4. PROCESAMIENTO MATEMÁTICO LINEAL (Suma estricta controlada 100% por ti)
     let rankingArray = [];
     if (companeros) {
         companeros.forEach(c => {
             const correo_l = c.correo.toLowerCase().trim();
-            const d = tablaMaestraManual[correo_l] || { j1: 0, j2: 0, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, ex: 0, td: 0 };
+            const d = tablaMaestraManual[correo_l] || { j1: 0, j2: 0, j3: 0, j4: 0, j5: 0, j6: 0, j7: 0, j8: 0, bono: 0, ex: 0, td: 0 };
             
-            // Verificamos si este jugador se ganó los 10 puntos del Bono Campeón de Supabase
-            let puntosDelBono = 0;
-            const campeonElegidoJugador = mapaCampeonElegido[correo_l];
-            if (campeonMundialDefinitivo && campeonElegidoJugador && campeonElegidoJugador.toLowerCase().trim() === campeonMundialDefinitivo.toLowerCase()) {
-                puntosDelBono = 10;
-            }
-
-            const sumaTotal = d.j1 + d.j2 + d.j3 + d.j4 + d.j5 + d.j6 + d.j7 + d.j8 + puntosDelBono;
+            // 🎯 SUMA DEFINITIVA: Engancha directamente el valor que tú digites en la propiedad bono
+            const sumaTotal = d.j1 + d.j2 + d.j3 + d.j4 + d.j5 + d.j6 + d.j7 + d.j8 + d.bono;
 
             rankingArray.push({
                 usuario: mapaCorreosOriginales[correo_l] || c.correo, 
                 correo_l: correo_l,
                 j1: d.j1, j2: d.j2, j3: d.j3, j4: d.j4, j5: d.j5, j6: d.j6, j7: d.j7, j8: d.j8,
-                bono: puntosDelBono,
+                bono: d.bono,
                 puntos: sumaTotal, 
                 exactos: d.ex,
                 tendencias: d.td
@@ -1291,10 +1267,12 @@ async function mostrarRanking() {
     // Ordenamiento por el reglamento oficial de desempates en cascada
     rankingArray.sort((a, b) => b.puntos - a.puntos || b.exactos - a.exactos || b.tendencias - a.tendencias);
 
+    // --- DETECTAR CIERRE EN SUPABASE SOLO PARA ABRIR PODIOS ---
+    const finalMundial = partidos ? partidos.find(p => p.fase && p.fase.toUpperCase() === 'FINAL') : null;
     const mundialTerminado = finalMundial && finalMundial.resultado_local !== null;
     if (mundialTerminado && rankingArray.length > 0) { setTimeout(lanzarFuegosArtificiales, 500); }
 
-    // --- 👑 LÓGICA DEL PODIUM FINAL (Sincronizado con la columna manual) 👑 ---
+    // --- 👑 LÓGICA DEL PODIUM FINAL (Sincronizado con la columna manual de Supabase) 👑 ---
     if (mundialTerminado && rankingArray.length >= 1) {
         document.getElementById('podium-final').style.display = 'block';
         document.getElementById('podium-mundial').style.display = 'block'; 
@@ -1335,7 +1313,7 @@ async function mostrarRanking() {
         }
         if (bronce) {
             document.getElementById('podium-3-nombre').innerText = mapaNicks[bronce.correo_l] || bronce.usuario.split('@')[0];
-            document.getElementById('podium-3-avatar').innerText = mapaAvatares[bronce.correo_l] || '⚽';
+            document.getElementById('podium-3-avatar').innerText = mapaAvatares[bronce.correo_l] || '⚽'; 
         }
     } else {
         document.getElementById('podium-final').style.display = 'none';
@@ -1403,24 +1381,9 @@ async function mostrarRanking() {
                 <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR SEMIFINAL (J7)</span><br>
                 <span style="font-size: 15px;">👑 <b>Wolfgang 82</b></span> <span style="color: #27ae60; font-weight: bold;">(+8 pts)</span>
             </div>`;
-    } else if (miGrupo === 'ARIJAJO') {
-        htmlJornadas = `
-            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA 1</span><br>
-                <span style="font-size: 15px;">👑 <b>Ari</b></span> <span style="color: #27ae60; font-weight: bold;">(+37 pts)</span>
-            </div>
-            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA 2</span><br>
-                <span style="font-size: 15px;">👑 <b>Ari y Lemage</b></span> <span style="color: #27ae60; font-weight: bold;">(+47 pts)</span>
-            </div>
-            <div style="text-align: center; background: rgba(243, 156, 18, 0.08); border: 1px solid #f39c12; border-radius: 8px; padding: 10px; margin: 8px 0;">
-                <span style="font-size: 11px; color: #e67e22; font-weight: bold; text-transform: uppercase;">🏆 GANADOR JORNADA 3</span><br>
-                <span style="font-size: 15px;">👑 <b>Lemage</b></span> <span style="color: #27ae60; font-weight: bold;">(+56 pts)</span>
-            </div>`;
     }
 
-    // 💡 LÓGICA AUTOMÁTICA PARA EL MVP DE LA GRAN FINAL:
-    // Al finalizar, evaluará quién hizo la puntuación más alta en la celda 'j8' de tu código
+    // LÓGICA AUTOMÁTICA PARA EL MVP DE LA GRAN FINAL (Módulo MVP basado en j8 manual)
     if (mundialTerminado) {
         let maxFinalPts = -1;
         let ganadoresFinal = [];
@@ -1458,7 +1421,6 @@ async function mostrarRanking() {
             corona = '<div style="position: absolute; top: -16px; left: -10px; font-size: 24px;">🏆</div>';
         }
         
-        // Indicador dorado discreto si el usuario se adjudicó el Bono Campeón
         let textoBono = user.bono > 0 ? ` | <b style="color:#f1c40f;">🌟 Bono:</b> +10` : '';
     
         htmlRanking += `
